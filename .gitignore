@@ -56,6 +56,7 @@ run.bat
 api-docs.json
 *.log
 /redis
+redis.conf
 *.code-workspace
 .DS_Store
 /files
@@ -80,3 +81,5 @@ vite.config.local-dev.ts.timestamp-*
 
 # VSCode addon
 .favorites.json
+
+/cloudflare
