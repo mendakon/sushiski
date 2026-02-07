@@ -80,3 +80,13 @@ vite.config.local-dev.ts.timestamp-*
 
 # VSCode addon
 .favorites.json
+
+
+redis.backup/
+
+cloudflare/
+
+compose.yml
+
+
+nginx/conf.d/
