@@ -20,6 +20,12 @@ services:
       interval: 5s
       retries: 20
 
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     networks:
       - sushiski_internal_network
       - sushiski_external_network
@@ -46,6 +52,12 @@ services:
       web:
         condition: service_started
 
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     networks:
       - sushiski_external_network
       - sushiski_internal_network
@@ -67,9 +79,15 @@ services:
       - .config/docker.env
 
     healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli -a $REDIS_PASSWORD ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
       interval: 5s
       retries: 20
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
     networks:
       - sushiski_internal_network
@@ -96,6 +114,12 @@ services:
     working_dir: /meili_data
     entrypoint: ["tini", "--"]
     command: ["/bin/sh", "-c", "/bin/meilisearch"]
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
     networks:
       - sushiski_internal_network
