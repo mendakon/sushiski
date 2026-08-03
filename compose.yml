@@ -1,0 +1,151 @@
+services:
+  web:
+    build: .
+    container_name: sushiski-web
+    user: misskey
+    restart: always
+    working_dir: /misskey
+
+    env_file:
+      - .config/docker.env
+    environment:
+      NODE_ENV: production
+
+    volumes:
+      - /home/misskey/sushiski/files:/misskey/files:rw
+      - /home/misskey/sushiski/.config:/misskey/.config:ro
+
+    healthcheck:
+      test: ["CMD", "/bin/bash", "/misskey/healthcheck.sh"]
+      interval: 5s
+      retries: 20
+
+    networks:
+      - sushiski_internal_network
+      - sushiski_external_network
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+
+  nginx:
+    image: nginx:alpine
+    container_name: sushiski-nginx
+    restart: always
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - /home/misskey/sushiski/nginx/conf.d:/etc/nginx/conf.d:ro
+      - /home/misskey/sushiski/cloudflare:/etc/ssl/cloudflare:ro
+
+    depends_on:
+      web:
+        condition: service_started
+
+    networks:
+      - sushiski_external_network
+      - sushiski_internal_network
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: sushiski-redis
+    restart: always
+
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    working_dir: /data
+
+    volumes:
+      - /home/misskey/sushiski/redis:/data:rw
+      - /home/misskey/sushiski/.config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+    env_file:
+      - .config/docker.env
+
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli -a $REDIS_PASSWORD ping"]
+      interval: 5s
+      retries: 20
+
+    networks:
+      - sushiski_internal_network
+      - sushiski_external_network
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.3.4
+    container_name: sushiski-meilisearch
+    restart: always
+
+    ports:
+      - "7700:7700"
+
+    env_file:
+      - .config/docker.env
+    environment:
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_HTTP_ADDR: 0.0.0.0:7700
+
+    volumes:
+      - /home/misskey/sushiski/meili_data:/meili_data:rw
+
+    working_dir: /meili_data
+    entrypoint: ["tini", "--"]
+    command: ["/bin/sh", "-c", "/bin/meilisearch"]
+
+    networks:
+      - sushiski_internal_network
+      - sushiski_external_network
+
+  # NSFW 推論サイドカー (Misskey 2026.7.0+)。ホスト公開せず内部ネットワークのみ。
+  # コントロールパネル設定例:
+  #   API URL: http://sensitive-detector:3009/
+  #   API Key: .config/sensitive-detector.env の SENSITIVE_DETECTOR_API_KEY
+  sensitive-detector:
+    build:
+      context: /home/misskey/sensitive-detector
+      target: runtime
+    image: sushiski-sensitive-detector:latest
+    container_name: sushiski-sensitive-detector
+    restart: unless-stopped
+    env_file:
+      - .config/sensitive-detector.env
+    volumes:
+      - /home/misskey/sushiski/.config/sensitive-detector.config.mjs:/config/config.mjs:ro
+    healthcheck:
+      test: ["CMD", "node", "/scripts/healthcheck.mjs"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - sushiski_internal_network
+
+
+networks:
+  sushiski_internal_network:
+    external: true
+  sushiski_external_network:
+    external: true

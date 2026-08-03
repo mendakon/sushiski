@@ -36,7 +36,6 @@ coverage
 !/.config/docker_example.env
 !/.config/playwright-devcontainer.yml
 docker-compose.yml
-./compose.yml
 .devcontainer/compose.yml
 !/.devcontainer/compose.yml
 
@@ -87,5 +86,4 @@ vite.config.local-dev.ts.timestamp-*
 # sushiski local deploy paths
 redis.backup/
 cloudflare/
-compose.yml
 nginx/conf.d/
