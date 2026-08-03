@@ -87,3 +87,5 @@ vite.config.local-dev.ts.timestamp-*
 redis.backup/
 cloudflare/
 nginx/conf.d/
+prometheus_data/
+grafana_data/

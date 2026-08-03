@@ -168,8 +168,97 @@ services:
       - sushiski_internal_network
 
 
+  # --- monitoring (localhost only; use SSH tunnel) ---
+  # Grafana:    ssh -L 3001:127.0.0.1:3001 user@host  → http://127.0.0.1:3001
+  # Prometheus: ssh -L 9090:127.0.0.1:9090 user@host  → http://127.0.0.1:9090
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    container_name: sushiski-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=2GB
+      - --web.enable-lifecycle
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - /home/misskey/sushiski/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /home/misskey/sushiski/prometheus_data:/prometheus:rw
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:12.0.2
+    container_name: sushiski-grafana
+    restart: unless-stopped
+    env_file:
+      - .config/monitoring.env
+    environment:
+      GF_SERVER_ROOT_URL: http://127.0.0.1:3001
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - /home/misskey/sushiski/grafana_data:/var/lib/grafana:rw
+      - /home/misskey/sushiski/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    container_name: sushiski-node-exporter
+    restart: unless-stopped
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - monitoring
+
+
 networks:
   sushiski_internal_network:
     external: true
   sushiski_external_network:
     external: true
+  monitoring:
+    driver: bridge

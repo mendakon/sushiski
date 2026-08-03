@@ -1,0 +1,17 @@
+# Prometheus scrape config for sushiski host metrics.
+# Retention / memory limits are set in compose.yml.
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          instance: sushi.ski
