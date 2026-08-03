@@ -12,8 +12,17 @@ db/
 node_modules/
 packages/*/node_modules
 redis/
+redis.backup/
+meili_data/
 files/
 fluent-emojis/
+# .git は Dockerfile の `git submodule update --init` に必要
+.gitignore
+cloudflare/
+nginx/
+compose.yml
+compose_example.yml
+compose.local-db.yml
 .pnp.*
 
 # .yarn関連
