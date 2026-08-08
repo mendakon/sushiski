@@ -154,6 +154,7 @@ export class AiService {
 			});
 
 			if (!res.ok) {
+				await this.httpRequestService.discardBody(res);
 				this.logger.warn(`sensitive detection request failed: ${res.status} ${res.statusText}`);
 				return chunk.map(() => null);
 			}

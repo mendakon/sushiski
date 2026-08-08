@@ -25,6 +25,12 @@ import type { URL } from 'node:url';
 export type HttpRequestSendOptions = {
 	throwErrorWhenResponseNotOk: boolean;
 	validators?: ((res: Response) => void)[];
+	/**
+	 * When true, cancel/drain the response body before returning.
+	 * Required for callers that only need status/headers — with node-fetch@3
+	 * (undici), unconsumed bodies retain ArrayBuffer BackingStores.
+	 */
+	discardBody?: boolean;
 };
 
 class HttpRequestServiceAgent extends http.Agent {
@@ -306,6 +312,26 @@ export class HttpRequestService {
 		return await res.text();
 	}
 
+	/**
+	 * Release an unused fetch Response body so undici/node-fetch@3 does not
+	 * retain native BackingStores (seen as process.memoryUsage().arrayBuffers growth).
+	 */
+	@bindThis
+	public async discardBody(res: Response): Promise<void> {
+		try {
+			if (res.bodyUsed) return;
+			const body = res.body as { cancel?: () => Promise<void> } | null | undefined;
+			if (body != null && typeof body.cancel === 'function') {
+				await body.cancel();
+				return;
+			}
+			// Fallback: fully consume
+			await res.arrayBuffer();
+		} catch {
+			// already closed / aborted — ignore
+		}
+	}
+
 	@bindThis
 	public async send(
 		url: string,
@@ -344,13 +370,23 @@ export class HttpRequestService {
 		});
 
 		if (!res.ok && extra.throwErrorWhenResponseNotOk) {
+			await this.discardBody(res);
 			throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
 		}
 
 		if (res.ok) {
-			for (const validator of (extra.validators ?? [])) {
-				validator(res);
+			try {
+				for (const validator of (extra.validators ?? [])) {
+					validator(res);
+				}
+			} catch (err) {
+				await this.discardBody(res);
+				throw err;
 			}
+		}
+
+		if (extra.discardBody) {
+			await this.discardBody(res);
 		}
 
 		return res;

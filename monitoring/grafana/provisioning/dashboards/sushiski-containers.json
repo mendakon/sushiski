@@ -39,7 +39,7 @@
       },
       "targets": [
         {
-          "expr": "count(container_last_seen{job=\"cadvisor\",name=~\"sushiski-.*\"})",
+          "expr": "count(container_last_seen{job=\"cadvisor\",name=~\"sushiski-.+\"})",
           "refId": "A"
         }
       ]
@@ -71,7 +71,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name=~\"sushiski-.*\"}[5m])) * 100",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name=~\"sushiski-.+\"}[5m])) * 100",
           "refId": "A"
         }
       ]
@@ -102,7 +102,7 @@
       },
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",name=~\"sushiski-.*\"})",
+          "expr": "sum(container_memory_working_set_bytes{job=\"cadvisor\",name=~\"sushiski-.+\"})",
           "refId": "A"
         }
       ]
@@ -193,7 +193,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name=~\"sushiski-.*\"}[5m])) * 100",
+          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name=~\"sushiski-.+\"}[5m])) * 100",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -223,7 +223,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (container_memory_working_set_bytes{job=\"cadvisor\",name=~\"sushiski-.*\"})",
+          "expr": "sum by (name) (container_memory_working_set_bytes{job=\"cadvisor\",name=~\"sushiski-.+\"})",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -252,7 +252,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (rate(container_network_receive_bytes_total{job=\"cadvisor\",name=~\"sushiski-.*\"}[5m]))",
+          "expr": "sum by (name) (rate(container_network_receive_bytes_total{job=\"cadvisor\",name=~\"sushiski-.+\"}[5m]))",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -281,7 +281,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (rate(container_network_transmit_bytes_total{job=\"cadvisor\",name=~\"sushiski-.*\"}[5m]))",
+          "expr": "sum by (name) (rate(container_network_transmit_bytes_total{job=\"cadvisor\",name=~\"sushiski-.+\"}[5m]))",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -310,7 +310,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (container_fs_usage_bytes{job=\"cadvisor\",name=~\"sushiski-.*\"})",
+          "expr": "sum by (name) (container_fs_usage_bytes{job=\"cadvisor\",name=~\"sushiski-.+\"})",
           "legendFormat": "{{name}}",
           "refId": "A"
         }

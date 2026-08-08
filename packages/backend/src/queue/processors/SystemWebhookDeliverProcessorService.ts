@@ -54,6 +54,9 @@ export class SystemWebhookDeliverProcessorService {
 					type: job.data.type,
 					body: job.data.content,
 				}),
+			}, {
+				throwErrorWhenResponseNotOk: true,
+				discardBody: true,
 			});
 
 			this.systemWebhooksRepository.update({ id: job.data.webhookId }, {

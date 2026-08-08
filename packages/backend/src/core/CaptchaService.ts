@@ -99,6 +99,7 @@ export class CaptchaService {
 		}, { throwErrorWhenResponseNotOk: false });
 
 		if (!res.ok) {
+			await this.httpRequestService.discardBody(res);
 			throw new Error(`${res.status}`);
 		}
 
@@ -158,6 +159,7 @@ export class CaptchaService {
 		}, { throwErrorWhenResponseNotOk: false });
 
 		if (result.status !== 200) {
+			await this.httpRequestService.discardBody(result);
 			throw new CaptchaError(captchaErrorCodes.requestFailed, 'mcaptcha-failed: mcaptcha didn\'t return 200 OK');
 		}
 

@@ -35,7 +35,7 @@ describe('CaptchaService', () => {
 				CaptchaService,
 				LoggerService,
 				{
-					provide: HttpRequestService, useFactory: () => ({ send: vi.fn() }),
+					provide: HttpRequestService, useFactory: () => ({ send: vi.fn(), discardBody: vi.fn().mockResolvedValue(undefined) }),
 				},
 				{
 					provide: MetaService, useFactory: () => ({

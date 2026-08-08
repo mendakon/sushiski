@@ -21,3 +21,65 @@ scrape_configs:
       - targets: ["cadvisor:8080"]
         labels:
           instance: sushi.ski
+
+  # HTTP 200 probes (blackbox-exporter)
+  - job_name: blackbox
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets:
+          - https://sushi.ski/healthz
+        labels:
+          probe: public
+          service: sushi.ski
+      - targets:
+          - https://sushi.ski/
+        labels:
+          probe: public_root
+          service: sushi.ski
+      - targets:
+          - http://web:3000/healthz
+        labels:
+          probe: app
+          service: web
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+      - source_labels: [__param_target]
+        target_label: target
+
+  - job_name: misskey-queue
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["misskey-queue-exporter:9101"]
+        labels:
+          instance: sushi.ski
+
+  # V8 / GC / event-loop (preload inside web; not published to host)
+  - job_name: misskey-node
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "web:9102"
+        labels:
+          instance: sushi.ski
+          role: worker
+      - targets:
+          - "web:9103"
+        labels:
+          instance: sushi.ski
+          role: master
+
+  - job_name: nginx-misskey
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["nginx-log-exporter:4040"]
+        labels:
+          instance: sushi.ski

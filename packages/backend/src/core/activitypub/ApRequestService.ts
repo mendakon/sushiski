@@ -179,6 +179,9 @@ export class ApRequestService {
 			method: req.request.method,
 			headers: req.request.headers,
 			body,
+		}, {
+			throwErrorWhenResponseNotOk: true,
+			discardBody: true,
 		});
 	}
 

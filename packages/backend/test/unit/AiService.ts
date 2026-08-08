@@ -20,7 +20,7 @@ const DEFAULT_META = {
 
 function makeService(metaOverrides: Partial<typeof DEFAULT_META> = {}): AiService {
 	const meta = { ...DEFAULT_META, ...metaOverrides } as unknown as MiMeta;
-	const httpRequestService = { send: sendMock } as unknown as HttpRequestService;
+	const httpRequestService = { send: sendMock, discardBody: vi.fn().mockResolvedValue(undefined) } as unknown as HttpRequestService;
 	const loggerService = {
 		getLogger: () => ({ warn: () => {}, error: () => {}, info: () => {} }),
 	} as unknown as LoggerService;

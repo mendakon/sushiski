@@ -222,8 +222,9 @@ export class JsonLd {
 				throwErrorWhenResponseNotOk: false,
 				validators: [validateContentTypeSetAsJsonLD],
 			},
-		).then(res => {
+		).then(async res => {
 			if (!res.ok) {
+				await this.httpRequestService.discardBody(res);
 				throw new Error(`${res.status} ${res.statusText}`);
 			} else {
 				return res.json();

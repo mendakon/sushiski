@@ -10,10 +10,13 @@ services:
       - .config/docker.env
     environment:
       NODE_ENV: production
+      # V8 heap / GC / event-loop metrics (worker:9102 master:9103), scrape on monitoring net only
+      NODE_OPTIONS: "--require /misskey/monitoring-preload.cjs"
 
     volumes:
       - /home/misskey/sushiski/files:/misskey/files:rw
       - /home/misskey/sushiski/.config:/misskey/.config:ro
+      - /home/misskey/sushiski/monitoring/misskey-node-preload/preload.cjs:/misskey/monitoring-preload.cjs:ro
 
     healthcheck:
       test: ["CMD", "/bin/bash", "/misskey/healthcheck.sh"]
@@ -29,6 +32,7 @@ services:
     networks:
       - sushiski_internal_network
       - sushiski_external_network
+      - monitoring
 
     depends_on:
       redis:
@@ -47,6 +51,7 @@ services:
     volumes:
       - /home/misskey/sushiski/nginx/conf.d:/etc/nginx/conf.d:ro
       - /home/misskey/sushiski/cloudflare:/etc/ssl/cloudflare:ro
+      - /home/misskey/sushiski/nginx/logs:/var/log/nginx/misskey:rw
 
     depends_on:
       web:
@@ -282,6 +287,88 @@ services:
         max-file: "3"
     networks:
       - monitoring
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.26.0
+    container_name: sushiski-blackbox
+    restart: unless-stopped
+    command:
+      - --config.file=/config/blackbox.yml
+    volumes:
+      - /home/misskey/sushiski/monitoring/blackbox.yml:/config/blackbox.yml:ro
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - monitoring
+      # web:3000/healthz を直接叩くため
+      - sushiski_internal_network
+
+  misskey-queue-exporter:
+    build: ./monitoring/misskey-queue-exporter
+    container_name: sushiski-queue-exporter
+    restart: unless-stopped
+    # Misskey worker/master の /proc を読む（RSS / anonymous ≈ heap）
+    pid: "service:web"
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    env_file:
+      - .config/docker.env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      QUEUE_PREFIX: sushi.ski
+      QUEUES: deliver,inbox
+      PORT: "9101"
+      PROCESS_WINDOW_SEC: "10"
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - monitoring
+      - sushiski_internal_network
+    depends_on:
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  nginx-log-exporter:
+    build: ./monitoring/nginx-log-exporter
+    container_name: sushiski-nginx-log-exporter
+    restart: unless-stopped
+    environment:
+      NGINX_METRICS_LOG: /var/log/nginx/misskey/metrics.log
+      PORT: "4040"
+    volumes:
+      - /home/misskey/sushiski/nginx/logs:/var/log/nginx/misskey:ro
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - monitoring
+    depends_on:
+      - nginx
 
 
 networks:
