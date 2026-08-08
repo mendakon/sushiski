@@ -2,6 +2,9 @@
 /.vscode
 !/.vscode/extensions.json
 
+# Cursor
+/.cursor
+
 # Intelij-IDEA
 /.idea
 
