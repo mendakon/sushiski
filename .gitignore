@@ -92,3 +92,14 @@ cloudflare/
 nginx/conf.d/
 prometheus_data/
 grafana_data/
+
+# sushiski local ops (host-specific; do not commit)
+/HANDOFF.md
+/monitoring/MIGRATION.md
+/monitoring/UPGRADE.md
+/.config/pilot-clean-remote-files.jsonl
+/.config/pilot-clean-remote-files.stop
+/.config/pilot-clean-remote-files.state
+/.config/pilot-clean-remote-files.out
+/nginx/logs/
+/scripts/__pycache__/

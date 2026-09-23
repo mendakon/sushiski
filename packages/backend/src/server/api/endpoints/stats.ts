@@ -4,7 +4,8 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { InstancesRepository, NoteReactionsRepository } from '@/models/_.js';
+import { DataSource } from 'typeorm';
+import type { InstancesRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import NotesChart from '@/core/chart/charts/notes.js';
@@ -68,11 +69,11 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.db)
+		private db: DataSource,
+
 		@Inject(DI.instancesRepository)
 		private instancesRepository: InstancesRepository,
-
-		@Inject(DI.noteReactionsRepository)
-		private noteReactionsRepository: NoteReactionsRepository,
 
 		private notesChart: NotesChart,
 		private usersChart: UsersChart,
@@ -86,15 +87,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const usersCount = usersChart.local.total[0] + usersChart.remote.total[0];
 			const originalUsersCount = usersChart.local.total[0];
 
+			// note_reaction は億行級。COUNT(*) は statement timeout / DB 飽和の原因になるため
+			// pg_class.reltuples の概算を使う（admin/get-table-stats と同じ方針）
 			const [
-				reactionsCount,
-				//originalReactionsCount,
+				reactionsApprox,
 				instances,
 			] = await Promise.all([
-				this.noteReactionsRepository.count({ cache: 3600000 }), // 1 hour
-				//this.noteReactionsRepository.count({ where: { userHost: IsNull() }, cache: 3600000 }),
+				this.db.query(
+					`SELECT reltuples::bigint AS count FROM pg_class WHERE relname = 'note_reaction' AND relkind = 'r'`,
+				) as Promise<{ count: string | number }[]>,
 				this.instancesRepository.count({ cache: 3600000 }),
 			]);
+
+			const reactionsCount = Number(reactionsApprox[0]?.count ?? 0);
 
 			return {
 				notesCount,

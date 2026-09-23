@@ -50,6 +50,7 @@ services:
 
     volumes:
       - /home/misskey/sushiski/nginx/conf.d:/etc/nginx/conf.d:ro
+      - /home/misskey/sushiski/nginx/html:/usr/share/nginx/html:ro
       - /home/misskey/sushiski/cloudflare:/etc/ssl/cloudflare:ro
       - /home/misskey/sushiski/nginx/logs:/var/log/nginx/misskey:rw
 
@@ -102,9 +103,7 @@ services:
     image: getmeili/meilisearch:v1.3.4
     container_name: sushiski-meilisearch
     restart: always
-
-    ports:
-      - "7700:7700"
+    # 内部ネットワークのみ（ホストへ 7700 を晒さない）
 
     env_file:
       - .config/docker.env
@@ -112,6 +111,8 @@ services:
       MEILI_ENV: production
       MEILI_NO_ANALYTICS: "true"
       MEILI_HTTP_ADDR: 0.0.0.0:7700
+      # 索引更新ピークを抑える（cgroup 上限と併用）
+      MEILI_MAX_INDEXING_MEMORY: 512MiB
 
     volumes:
       - /home/misskey/sushiski/meili_data:/meili_data:rw
@@ -119,6 +120,12 @@ services:
     working_dir: /meili_data
     entrypoint: ["tini", "--"]
     command: ["/bin/sh", "-c", "/bin/meilisearch"]
+
+    # ホスト 7.8GiB 逼迫対策。検索欠落より Swap 回避を優先（移行後に見直し可）
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
     logging:
       driver: json-file
@@ -369,6 +376,32 @@ services:
       - monitoring
     depends_on:
       - nginx
+
+  # App→DB SELECT 1 RTT（web と同じ Docker 経路 + WG）。web には依存しない。
+  pg-ping-exporter:
+    build: ./monitoring/pg-ping-exporter
+    container_name: sushiski-pg-ping
+    restart: unless-stopped
+    user: "65534:65534"
+    environment:
+      MISSKEY_DEFAULT_YML: /config/default.yml
+      PING_INTERVAL_SEC: "2"
+      PORT: "9104"
+    volumes:
+      - /home/misskey/sushiski/.config/default.yml:/config/default.yml:ro
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - monitoring
+      - sushiski_internal_network
+      - sushiski_external_network
 
 
 networks:

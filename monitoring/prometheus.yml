@@ -83,3 +83,12 @@ scrape_configs:
       - targets: ["nginx-log-exporter:4040"]
         labels:
           instance: sushi.ski
+
+  # App→Postgres SELECT 1 / connect RTT (WG 10.66.66.2)
+  - job_name: pg-ping
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["pg-ping-exporter:9104"]
+        labels:
+          instance: sushi.ski
+          db_host: "10.66.66.2"
