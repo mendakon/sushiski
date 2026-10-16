@@ -1,6 +1,7 @@
 services:
   web:
     build: .
+    image: sushiski-web:latest
     container_name: sushiski-web
     user: misskey
     restart: always
@@ -10,7 +11,9 @@ services:
       - .config/docker.env
     environment:
       NODE_ENV: production
-      # V8 heap / GC / event-loop metrics (worker:9102 master:9103), scrape on monitoring net only
+      # HTTP だけ。キューは queue サービス。clusterLimit=2 で worker 2本。
+      MK_ONLY_SERVER: "true"
+      # V8 heap / GC / event-loop metrics (worker:9102/9104 master:9103)
       NODE_OPTIONS: "--require /misskey/monitoring-preload.cjs"
 
     volumes:
@@ -39,14 +42,55 @@ services:
         condition: service_healthy
 
 
+  # ActivityPub / ジョブキュー専用。migrate しない。web の recreate 承認後に上げる。
+  queue:
+    image: sushiski-web:latest
+    container_name: sushiski-queue
+    user: misskey
+    restart: always
+    working_dir: /misskey
+    command: ["pnpm", "run", "start"]
+
+    env_file:
+      - .config/docker.env
+    environment:
+      NODE_ENV: production
+      MK_ONLY_QUEUE: "true"
+      MK_DISABLE_CLUSTERING: "true"
+      NODE_OPTIONS: "--require /misskey/monitoring-preload.cjs"
+
+    volumes:
+      - /home/misskey/sushiski/files:/misskey/files:rw
+      - /home/misskey/sushiski/.config:/misskey/.config:ro
+      - /home/misskey/sushiski/monitoring/misskey-node-preload/preload.cjs:/misskey/monitoring-preload.cjs:ro
+
+    healthcheck:
+      disable: true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    networks:
+      - sushiski_internal_network
+      - sushiski_external_network
+      - monitoring
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+
   nginx:
     image: nginx:alpine
     container_name: sushiski-nginx
     restart: always
 
     ports:
-      - "80:80"
-      - "443:443"
+      - "${NGINX_BIND_IP:?NGINX_BIND_IP is not set}:80:80"
+      - "${NGINX_BIND_IP:?NGINX_BIND_IP is not set}:443:443"
 
     volumes:
       - /home/misskey/sushiski/nginx/conf.d:/etc/nginx/conf.d:ro
@@ -111,8 +155,8 @@ services:
       MEILI_ENV: production
       MEILI_NO_ANALYTICS: "true"
       MEILI_HTTP_ADDR: 0.0.0.0:7700
-      # 索引更新ピークを抑える（cgroup 上限と併用）
-      MEILI_MAX_INDEXING_MEMORY: 512MiB
+      # 索引更新ピーク。コンテナ上限 2g とセット
+      MEILI_MAX_INDEXING_MEMORY: 1GiB
 
     volumes:
       - /home/misskey/sushiski/meili_data:/meili_data:rw
@@ -121,11 +165,10 @@ services:
     entrypoint: ["tini", "--"]
     command: ["/bin/sh", "-c", "/bin/meilisearch"]
 
-    # ホスト 7.8GiB 逼迫対策。検索欠落より Swap 回避を優先（移行後に見直し可）
     deploy:
       resources:
         limits:
-          memory: 1g
+          memory: 2g
 
     logging:
       driver: json-file
@@ -227,6 +270,7 @@ services:
     volumes:
       - /home/misskey/sushiski/grafana_data:/var/lib/grafana:rw
       - /home/misskey/sushiski/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - /home/misskey/sushiski-feel-bot/grafana/sushiski-feel.json:/etc/grafana/provisioning/dashboards/sushiski-feel.json:ro
     depends_on:
       - prometheus
     deploy:
@@ -402,7 +446,6 @@ services:
       - monitoring
       - sushiski_internal_network
       - sushiski_external_network
-
 
 networks:
   sushiski_internal_network:

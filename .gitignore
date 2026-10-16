@@ -103,3 +103,6 @@ grafana_data/
 /.config/pilot-clean-remote-files.out
 /nginx/logs/
 /scripts/__pycache__/
+
+# compose 変数 (サーバー IP など)
+/.env

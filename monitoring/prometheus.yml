@@ -62,7 +62,7 @@ scrape_configs:
         labels:
           instance: sushi.ski
 
-  # V8 / GC / event-loop (preload inside web; not published to host)
+  # V8 / GC / event-loop (preload inside web/queue; not published to host)
   - job_name: misskey-node
     scrape_interval: 15s
     static_configs:
@@ -71,11 +71,23 @@ scrape_configs:
         labels:
           instance: sushi.ski
           role: worker
+          worker: "1"
+      - targets:
+          - "web:9104"
+        labels:
+          instance: sushi.ski
+          role: worker
+          worker: "2"
       - targets:
           - "web:9103"
         labels:
           instance: sushi.ski
           role: master
+      - targets:
+          - "queue:9103"
+        labels:
+          instance: sushi.ski
+          role: queue
 
   - job_name: nginx-misskey
     scrape_interval: 15s
@@ -85,6 +97,13 @@ scrape_configs:
           instance: sushi.ski
 
   # App→Postgres SELECT 1 / connect RTT (WG 10.66.66.2)
+  - job_name: feel-bot
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["feel-bot:9105"]
+        labels:
+          instance: sushi.ski
+
   - job_name: pg-ping
     scrape_interval: 15s
     static_configs:

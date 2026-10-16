@@ -4,6 +4,7 @@
  * Enabled via NODE_OPTIONS=--require /misskey/monitoring-preload.cjs
  * Serves Prometheus metrics on 0.0.0.0:9102 (worker) / :9103 (master) once process.title is set.
  */
+const cluster = require('node:cluster');
 const http = require('node:http');
 const { monitorEventLoopDelay, PerformanceObserver } = require('node:perf_hooks');
 
@@ -57,68 +58,72 @@ function metricsBody() {
 
 	const lines = [];
 	const r = role || 'unknown';
+	const workerId = cluster.worker?.id != null ? String(cluster.worker.id) : '';
+	const wlbl = workerId ? `,worker="${workerId}"` : '';
 
 	lines.push('# HELP misskey_v8_heap_used_bytes V8 heap used');
 	lines.push('# TYPE misskey_v8_heap_used_bytes gauge');
-	lines.push(`misskey_v8_heap_used_bytes{role="${r}"} ${mem.heapUsed}`);
+	lines.push(`misskey_v8_heap_used_bytes{role="${r}"${wlbl}} ${mem.heapUsed}`);
 
 	lines.push('# HELP misskey_v8_heap_total_bytes V8 heap total');
 	lines.push('# TYPE misskey_v8_heap_total_bytes gauge');
-	lines.push(`misskey_v8_heap_total_bytes{role="${r}"} ${mem.heapTotal}`);
+	lines.push(`misskey_v8_heap_total_bytes{role="${r}"${wlbl}} ${mem.heapTotal}`);
 
 	lines.push('# HELP misskey_v8_external_bytes C++ objects bound to JS');
 	lines.push('# TYPE misskey_v8_external_bytes gauge');
-	lines.push(`misskey_v8_external_bytes{role="${r}"} ${mem.external}`);
+	lines.push(`misskey_v8_external_bytes{role="${r}"${wlbl}} ${mem.external}`);
 
 	lines.push('# HELP misskey_v8_array_buffers_bytes ArrayBuffers / SharedArrayBuffers');
 	lines.push('# TYPE misskey_v8_array_buffers_bytes gauge');
-	lines.push(`misskey_v8_array_buffers_bytes{role="${r}"} ${mem.arrayBuffers}`);
+	lines.push(`misskey_v8_array_buffers_bytes{role="${r}"${wlbl}} ${mem.arrayBuffers}`);
 
 	lines.push('# HELP misskey_nodejs_process_rss_bytes process.memoryUsage().rss');
 	lines.push('# TYPE misskey_nodejs_process_rss_bytes gauge');
-	lines.push(`misskey_nodejs_process_rss_bytes{role="${r}"} ${mem.rss}`);
+	lines.push(`misskey_nodejs_process_rss_bytes{role="${r}"${wlbl}} ${mem.rss}`);
 
 	lines.push('# HELP misskey_nodejs_uptime_seconds Process uptime');
 	lines.push('# TYPE misskey_nodejs_uptime_seconds gauge');
-	lines.push(`misskey_nodejs_uptime_seconds{role="${r}"} ${process.uptime()}`);
+	lines.push(`misskey_nodejs_uptime_seconds{role="${r}"${wlbl}} ${process.uptime()}`);
 
 	if (eld) {
 		lines.push('# HELP misskey_event_loop_lag_seconds Event loop delay (monitorEventLoopDelay)');
 		lines.push('# TYPE misskey_event_loop_lag_seconds gauge');
-		lines.push(`misskey_event_loop_lag_seconds{role="${r}",stat="min"} ${eld.min / 1e9}`);
-		lines.push(`misskey_event_loop_lag_seconds{role="${r}",stat="mean"} ${eld.mean / 1e9}`);
-		lines.push(`misskey_event_loop_lag_seconds{role="${r}",stat="p50"} ${eld.percentile(50) / 1e9}`);
-		lines.push(`misskey_event_loop_lag_seconds{role="${r}",stat="p99"} ${eld.percentile(99) / 1e9}`);
-		lines.push(`misskey_event_loop_lag_seconds{role="${r}",stat="max"} ${eld.max / 1e9}`);
+		lines.push(`misskey_event_loop_lag_seconds{role="${r}"${wlbl},stat="min"} ${eld.min / 1e9}`);
+		lines.push(`misskey_event_loop_lag_seconds{role="${r}"${wlbl},stat="mean"} ${eld.mean / 1e9}`);
+		lines.push(`misskey_event_loop_lag_seconds{role="${r}"${wlbl},stat="p50"} ${eld.percentile(50) / 1e9}`);
+		lines.push(`misskey_event_loop_lag_seconds{role="${r}"${wlbl},stat="p99"} ${eld.percentile(99) / 1e9}`);
+		lines.push(`misskey_event_loop_lag_seconds{role="${r}"${wlbl},stat="max"} ${eld.max / 1e9}`);
 		eld.reset();
 	}
 
 	lines.push('# HELP misskey_gc_count_total GC invocations since process start');
 	lines.push('# TYPE misskey_gc_count_total counter');
-	lines.push(`misskey_gc_count_total{role="${r}",kind="all"} ${gc.count}`);
+	lines.push(`misskey_gc_count_total{role="${r}"${wlbl},kind="all"} ${gc.count}`);
 	for (const [kind, n] of Object.entries(gc.byKind)) {
-		lines.push(`misskey_gc_count_total{role="${r}",kind="${kind}"} ${n}`);
+		lines.push(`misskey_gc_count_total{role="${r}"${wlbl},kind="${kind}"} ${n}`);
 	}
 
 	lines.push('# HELP misskey_gc_duration_seconds_total GC duration seconds since process start');
 	lines.push('# TYPE misskey_gc_duration_seconds_total counter');
-	lines.push(`misskey_gc_duration_seconds_total{role="${r}"} ${gc.durationSeconds}`);
+	lines.push(`misskey_gc_duration_seconds_total{role="${r}"${wlbl}} ${gc.durationSeconds}`);
 
 	lines.push('# HELP misskey_process_cpu_ratio CPU time / wall time since last scrape (~1 if busy)');
 	lines.push('# TYPE misskey_process_cpu_ratio gauge');
-	lines.push(`misskey_process_cpu_ratio{role="${r}",mode="user"} ${userRatio}`);
-	lines.push(`misskey_process_cpu_ratio{role="${r}",mode="system"} ${systemRatio}`);
+	lines.push(`misskey_process_cpu_ratio{role="${r}"${wlbl},mode="user"} ${userRatio}`);
+	lines.push(`misskey_process_cpu_ratio{role="${r}"${wlbl},mode="system"} ${systemRatio}`);
 
 	lines.push('# HELP misskey_node_metrics_up 1 if preload metrics server is running');
 	lines.push('# TYPE misskey_node_metrics_up gauge');
-	lines.push(`misskey_node_metrics_up{role="${r}"} 1`);
+	lines.push(`misskey_node_metrics_up{role="${r}"${wlbl}} 1`);
 
 	return lines.join('\n') + '\n';
 }
 
 function startServer(detected) {
 	role = detected;
-	const port = role === 'worker' ? WORKER_PORT : MASTER_PORT;
+	const workerId = cluster.worker?.id || 1;
+	// worker 1=9102, worker 2=9104（master の 9103 とぶつからない）
+	const port = role === 'worker' ? WORKER_PORT + (workerId - 1) * 2 : MASTER_PORT;
 	try {
 		eld = monitorEventLoopDelay({ resolution: 20 });
 		eld.enable();
