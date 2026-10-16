@@ -220,7 +220,9 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - sushiski_internal_network
+      sushiski_internal_network:
+        # .config/default.yml の allowedPrivateNetworks (/32) と揃える
+        ipv4_address: 172.19.255.10
 
 
   # --- monitoring (localhost only; use SSH tunnel) ---
