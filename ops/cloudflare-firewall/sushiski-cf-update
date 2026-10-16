@@ -1,0 +1,110 @@
+#!/bin/bash
+# Cloudflare の IPv4 レンジを取得し、DOCKER-USER/sushiski-cf と /etc/ufw/after.rules の
+# sushiski-cf ブロックを最新に保つ。取得・検証に失敗したら何も変えない。
+#
+#   sushiski-cf-update            変更があれば反映
+#   sushiski-cf-update --dry-run  差分を表示するだけ
+#   CF_IPS_FILE=list.txt ...      API の代わりにファイル (1 行 1 CIDR) を使う (テスト用)
+set -euo pipefail
+
+STATE_DIR=${STATE_DIR:-/root/sushiski-cf-firewall}
+AFTER_RULES=${AFTER_RULES:-/etc/ufw/after.rules}
+API_URL=https://api.cloudflare.com/client/v4/ips
+MIN_RANGES=10
+DRY_RUN=0
+[ "${1:-}" = "--dry-run" ] && DRY_RUN=1
+
+log() { echo "sushiski-cf-update: $*"; }
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+# --- 取得 ---
+if [ -n "${CF_IPS_FILE:-}" ]; then
+	grep -v '^\s*$' "$CF_IPS_FILE" > "$tmp/new.raw"
+else
+	if ! curl -fsS --max-time 30 --retry 3 "$API_URL" -o "$tmp/api.json"; then
+		log "fetch failed; keeping current rules"
+		exit 1
+	fi
+	if [ "$(jq -r '.success' "$tmp/api.json")" != "true" ]; then
+		log "API returned success!=true; keeping current rules"
+		exit 1
+	fi
+	jq -r '.result.ipv4_cidrs[]' "$tmp/api.json" > "$tmp/new.raw"
+fi
+
+# --- 検証 ---
+if grep -vqE '^([0-9]{1,3}\.){3}[0-9]{1,3}/([0-9]|[12][0-9]|3[0-2])$' "$tmp/new.raw"; then
+	log "invalid CIDR in list; keeping current rules"
+	exit 1
+fi
+sort -u "$tmp/new.raw" > "$tmp/new"
+count=$(wc -l < "$tmp/new")
+if [ "$count" -lt "$MIN_RANGES" ]; then
+	log "only $count ranges (< $MIN_RANGES); keeping current rules"
+	exit 1
+fi
+
+# --- 現状と比較 (稼働中のチェーンと after.rules の両方) ---
+iptables -S sushiski-cf 2>/dev/null | awk '$1=="-A" && $3=="-s"{print $4}' | sort -u > "$tmp/live"
+sed -n '/^# BEGIN sushiski-cf/,/^# END sushiski-cf/p' "$AFTER_RULES" \
+	| awk '$1=="-A" && $2=="sushiski-cf" && $3=="-s"{print $4}' | sort -u > "$tmp/persisted"
+
+if cmp -s "$tmp/new" "$tmp/live" && cmp -s "$tmp/new" "$tmp/persisted"; then
+	log "no change ($count ranges)"
+	exit 0
+fi
+
+added=$(comm -13 "$tmp/live" "$tmp/new" | tr '\n' ' ')
+removed=$(comm -23 "$tmp/live" "$tmp/new" | tr '\n' ' ')
+log "change detected: added=[${added% }] removed=[${removed% }] persisted_in_sync=$(cmp -s "$tmp/new" "$tmp/persisted" && echo yes || echo no)"
+
+# --- ルール生成 ---
+{
+	echo "# BEGIN sushiski-cf: restrict docker-published 80/443 on eth0 to Cloudflare"
+	echo "*filter"
+	echo ":DOCKER-USER - [0:0]"
+	echo ":sushiski-cf - [0:0]"
+	echo "-A DOCKER-USER -i eth0 -p tcp -m conntrack --ctstate NEW --ctorigdstport 80 -j sushiski-cf"
+	echo "-A DOCKER-USER -i eth0 -p tcp -m conntrack --ctstate NEW --ctorigdstport 443 -j sushiski-cf"
+	echo "-A DOCKER-USER -j RETURN"
+	while read -r c; do echo "-A sushiski-cf -s $c -j RETURN"; done < "$tmp/new"
+	echo "-A sushiski-cf -j DROP"
+	echo "COMMIT"
+	echo "# END sushiski-cf"
+} > "$tmp/rules"
+
+iptables-restore --test --noflush < "$tmp/rules"
+
+if [ "$DRY_RUN" = 1 ]; then
+	log "dry-run; not applying"
+	exit 0
+fi
+
+# --- 反映: 稼働中ルール (1 トランザクションで差し替え) ---
+iptables-restore --noflush < "$tmp/rules"
+
+# --- 反映: after.rules のブロックを置換 ---
+cp -p "$AFTER_RULES" "$AFTER_RULES.bak-sushiski-cf-update"
+if ! grep -q '^# BEGIN sushiski-cf' "$AFTER_RULES"; then
+	# 初回: 末尾に追記
+	{ echo; cat "$tmp/rules"; } >> "$AFTER_RULES"
+elif ! grep -q '^# END sushiski-cf' "$AFTER_RULES"; then
+	log "BEGIN marker without END in $AFTER_RULES; live rules updated but not persisted"
+	exit 1
+else
+awk -v rules="$tmp/rules" '
+	/^# BEGIN sushiski-cf/ { while ((getline l < rules) > 0) print l; skip = 1; next }
+	/^# END sushiski-cf/ { skip = 0; next }
+	!skip { print }
+' "$AFTER_RULES" > "$tmp/after.rules"
+cat "$tmp/after.rules" > "$AFTER_RULES"
+fi
+
+# 手動用ファイルも揃える
+mkdir -p "$STATE_DIR"
+cp "$tmp/rules" "$STATE_DIR/sushiski-cf.rules"
+cp "$tmp/new" "$STATE_DIR/cf-ips-v4.txt"
+
+log "applied ($count ranges)"

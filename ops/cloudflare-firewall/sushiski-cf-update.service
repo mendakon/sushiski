@@ -1,0 +1,8 @@
+[Unit]
+Description=Sync Cloudflare IPv4 ranges into sushiski-cf firewall chain
+Wants=network-online.target
+After=network-online.target ufw.service docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/sushiski-cf-update
