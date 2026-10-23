@@ -710,6 +710,60 @@ describe('Note', () => {
 			assert.strictEqual(note2.body.createdNote.visibility, 'home');
 		});
 
+		test('センシティブな投稿はhomeになる (CWの注釈)', async () => {
+			const sensitive = await api('admin/update-meta', {
+				sensitiveWords: [
+					'test',
+				],
+			}, root);
+
+			assert.strictEqual(sensitive.status, 204);
+
+			const note = await api('notes/create', {
+				cw: 'hogetesthuge',
+				text: 'hoge',
+			}, alice);
+
+			assert.strictEqual(note.status, 200);
+			assert.strictEqual(note.body.createdNote.visibility, 'home');
+		});
+
+		test('センシティブな投稿はhomeになる (CWで隠された本文)', async () => {
+			const sensitive = await api('admin/update-meta', {
+				sensitiveWords: [
+					'test',
+				],
+			}, root);
+
+			assert.strictEqual(sensitive.status, 204);
+
+			const note = await api('notes/create', {
+				cw: 'hoge',
+				text: 'hogetesthuge',
+			}, alice);
+
+			assert.strictEqual(note.status, 200);
+			assert.strictEqual(note.body.createdNote.visibility, 'home');
+		});
+
+		test('スペースアンド指定はCWと本文をまたいで一致しない', async () => {
+			const sensitive = await api('admin/update-meta', {
+				sensitiveWords: [
+					'foo bar',
+				],
+			}, root);
+
+			assert.strictEqual(sensitive.status, 204);
+
+			const note = await api('notes/create', {
+				cw: 'foo',
+				text: 'bar',
+			}, alice);
+
+			assert.strictEqual(note.status, 200);
+			assert.strictEqual(note.body.createdNote.visibility, 'public');
+		});
+
 		test('禁止ワードを含む投稿はエラーになる (単語指定)', async () => {
 			const prohibited = await api('admin/update-meta', {
 				prohibitedWords: [
