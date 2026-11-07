@@ -9,7 +9,8 @@
 		},
 		"ghcr.io/devcontainers-extra/features/pnpm:2": {
 			"version": "11.25.0"
-		}
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
 	"forwardPorts": [3000],
 	"postCreateCommand": "/bin/bash .devcontainer/init.sh",
