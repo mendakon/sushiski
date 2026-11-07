@@ -12102,6 +12102,34 @@ export interface Locale extends ILocale {
          * サーバーに接続できません
          */
         "header": string;
+        /**
+         * お使いのネットワーク、またはサーバー側に問題がある可能性があります。
+         */
+        "networkDescription": string;
+        /**
+         * ネットワークに接続されていません
+         */
+        "offlineHeader": string;
+        /**
+         * 端末の通信状況を確認してから、再読み込みしてください。
+         */
+        "offlineDescription": string;
+        /**
+         * サーバーの応答が遅れています
+         */
+        "timeoutHeader": string;
+        /**
+         * 混み合っている可能性があります。しばらく待ってから再読み込みしてください。
+         */
+        "timeoutDescription": string;
+        /**
+         * サーバーで障害が起きています
+         */
+        "serverErrorHeader": string;
+        /**
+         * 復旧までしばらくお待ちください。
+         */
+        "serverErrorDescription": string;
     };
     "_urlPreviewSetting": {
         /**

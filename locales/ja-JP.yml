@@ -3219,6 +3219,13 @@ _reversi:
 _offlineScreen:
   title: "オフライン - サーバーに接続できません"
   header: "サーバーに接続できません"
+  networkDescription: "お使いのネットワーク、またはサーバー側に問題がある可能性があります。"
+  offlineHeader: "ネットワークに接続されていません"
+  offlineDescription: "端末の通信状況を確認してから、再読み込みしてください。"
+  timeoutHeader: "サーバーの応答が遅れています"
+  timeoutDescription: "混み合っている可能性があります。しばらく待ってから再読み込みしてください。"
+  serverErrorHeader: "サーバーで障害が起きています"
+  serverErrorDescription: "復旧までしばらくお待ちください。"
 
 _urlPreviewSetting:
   title: "URLプレビューの設定"

@@ -1,0 +1,75 @@
+# sushi.ski 本番の nginx 設定 (nginx/conf.d/sushi.ski.conf の雛形)
+#
+# nginx/conf.d/ は gitignore 対象なので、変更はこのファイルで管理して手で反映する。
+# 反映手順と運用は ops/nginx/README.md を参照。
+#
+# - nginx/html/maintenance.on があれば 503 + maintenance.html (メンテナンス中)
+# - web が応答しないとき (nginx 自身の 502 / 504) は outage.html (障害)
+# どちらにも X-Sushiski-Status ヘッダーを付け、Service Worker はそのページをそのまま表示する。
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+
+    server_name sushi.ski;
+
+    ssl_certificate     /etc/ssl/cloudflare/sushi.ski.pem;
+    ssl_certificate_key /etc/ssl/cloudflare/sushi.ski.key;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    real_ip_header CF-Connecting-IP;
+
+    client_max_body_size 10G;
+
+    # Path-level latency metrics (tailed by nginx-log-exporter)
+    access_log /var/log/nginx/misskey/metrics.log misskey_metrics buffer=64k flush=1s;
+
+    # メンテナンス / 障害ページ用 (proxy_pass のない location だけが使う)
+    root /usr/share/nginx/html;
+
+    # nginx 自身が返す 503 / 502 / 504 だけが対象。
+    # proxy_intercept_errors は off (既定) なので、Misskey が返した 5xx はそのまま通す。
+    error_page 503 /maintenance.html;
+    error_page 502 504 /outage.html;
+
+    location / {
+        # ファイルの有無はリクエストごとに確認されるので、切り替えに reload は不要
+        if (-f /usr/share/nginx/html/maintenance.on) {
+            return 503;
+        }
+
+        proxy_pass http://web:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        proxy_buffering off;
+        proxy_cache off;
+    }
+
+    # ページの背景画像。メンテナンス中も 503 にしない
+    location = /_sushiski/hero.webp {
+        alias /usr/share/nginx/html/hero.webp;
+        add_header Cache-Control "public, max-age=3600";
+    }
+
+    location = /maintenance.html {
+        internal;
+        add_header X-Sushiski-Status "maintenance" always;
+        add_header Retry-After "60" always;
+        add_header Cache-Control "no-store" always;
+    }
+
+    location = /outage.html {
+        internal;
+        add_header X-Sushiski-Status "outage" always;
+        add_header Retry-After "60" always;
+        add_header Cache-Control "no-store" always;
+    }
+}

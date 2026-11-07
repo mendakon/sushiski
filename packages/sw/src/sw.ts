@@ -13,18 +13,38 @@ import { createEmptyNotification, createNotification } from '@/scripts/create-no
 import { swLang } from '@/scripts/lang.js';
 import * as swos from '@/scripts/operations.js';
 
+// sushiski: nginx が返すメンテナンス / 障害ページに付けるヘッダー (ops/nginx/README.md)
+const STATUS_PAGE_HEADER = 'X-Sushiski-Status';
+
+// offline: 端末がオフライン / timeout: 応答が遅い / server: 5xx が返った / network: それ以外の接続失敗
+type OfflineReason = 'offline' | 'timeout' | 'server' | 'network';
+
 async function respondToNavigation(request: Request): Promise<Response> {
 	const controller = new AbortController();
 	const timeout = globalThis.setTimeout(() => {
 		controller.abort('navigation-timeout');
 	}, FETCH_TIMEOUT_MS);
 
+	let reason: OfflineReason = 'network';
+	let status: number | null = null;
+
 	try {
 		const response = await fetch(request, { signal: controller.signal });
 
 		if (response?.status && response.status < 500) return response;
 		if (response?.type === 'opaqueredirect') return response;
+		// nginx のメンテナンス / 障害ページは説明が載っているのでそのまま見せる
+		if (response.headers.has(STATUS_PAGE_HEADER)) return response;
+
+		reason = 'server';
+		status = response.status;
 	} catch (error) {
+		if (!globalThis.navigator.onLine) {
+			reason = 'offline';
+		} else if (controller.signal.aborted) {
+			reason = 'timeout';
+		}
+
 		if (_DEV_) {
 			console.warn('navigation fetch failed; showing offline page', error);
 		}
@@ -32,8 +52,7 @@ async function respondToNavigation(request: Request): Promise<Response> {
 		globalThis.clearTimeout(timeout);
 	}
 
-	// Only show offline page when network request actually fails
-	const html = await offlineContentHTML();
+	const html = await offlineContentHTML(reason, status);
 	return new Response(html, {
 		status: 200,
 		headers: {
@@ -42,7 +61,7 @@ async function respondToNavigation(request: Request): Promise<Response> {
 	});
 }
 
-async function offlineContentHTML() {
+async function offlineContentHTML(reason: OfflineReason, status: number | null) {
 	let i18n: Partial<I18n<Locale>>;
 	try {
 		i18n = await (swLang.i18n ?? await swLang.fetchLocale()) as Partial<I18n<Locale>>;
@@ -50,13 +69,34 @@ async function offlineContentHTML() {
 		i18n = {};
 	}
 
-	const messages = {
-		title: i18n.ts?._offlineScreen.title ?? 'Offline - Could not connect to server',
-		header: i18n.ts?._offlineScreen.header ?? 'Could not connect to server',
-		reload: i18n.ts?.reload ?? 'Reload',
+	const t = i18n.ts?._offlineScreen;
+	const reasonMessages: Record<OfflineReason, { header: string; description: string }> = {
+		offline: {
+			header: t?.offlineHeader ?? 'You are offline',
+			description: t?.offlineDescription ?? 'Check your device\'s network connection, then reload.',
+		},
+		timeout: {
+			header: t?.timeoutHeader ?? 'The server is taking too long to respond',
+			description: t?.timeoutDescription ?? 'The server may be busy. Please wait a moment, then reload.',
+		},
+		server: {
+			header: t?.serverErrorHeader ?? 'The server is having problems',
+			description: t?.serverErrorDescription ?? 'Please wait a while for it to recover, then reload.',
+		},
+		network: {
+			header: t?.header ?? 'Could not connect to server',
+			description: t?.networkDescription ?? 'There may be a problem with your network or with the server.',
+		},
 	};
 
-	return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta content="width=device-width,initial-scale=1"name="viewport"><title>${messages.title}</title><style>body{background-color:#0c1210;color:#dee7e4;font-family:Hiragino Maru Gothic Pro,BIZ UDGothic,Roboto,HelveticaNeue,Arial,sans-serif;line-height:1.35;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box}.icon{max-width:120px;width:100%;height:auto;margin-bottom:20px;}.message{text-align:center;font-size:20px;font-weight:700;margin-bottom:20px}.version{text-align:center;font-size:90%;margin-bottom:20px}button{padding:7px 14px;min-width:100px;font-weight:700;font-family:Hiragino Maru Gothic Pro,BIZ UDGothic,Roboto,HelveticaNeue,Arial,sans-serif;line-height:1.35;border-radius:99rem;background-color:#b4e900;color:#192320;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent}button:hover{background-color:#c6ff03}</style></head><body><svg class="icon"fill="none"height="24"stroke="currentColor"stroke-linecap="round"stroke-linejoin="round"stroke-width="2"viewBox="0 0 24 24"width="24"xmlns="http://www.w3.org/2000/svg"><path d="M0 0h24v24H0z"fill="none"stroke="none"/><path d="M9.58 5.548c.24 -.11 .492 -.207 .752 -.286c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 .957 -.383 1.824 -1.003 2.454m-2.997 1.033h-11.343c-2.572 -.004 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.13 -.582 .37 -1.128 .7 -1.62"/><path d="M3 3l18 18"/></svg><div class="message">${messages.header}</div><div class="version">v${_VERSION_}</div><button onclick="reloadPage()">${messages.reload}</button><script>function reloadPage(){location.reload(!0)}</script></body></html>`;
+	const messages = {
+		title: t?.title ?? 'Offline - Could not connect to server',
+		...reasonMessages[reason],
+		reload: i18n.ts?.reload ?? 'Reload',
+	};
+	const detail = status != null ? `HTTP ${status} · v${_VERSION_}` : `v${_VERSION_}`;
+
+	return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta content="width=device-width,initial-scale=1"name="viewport"><title>${messages.title}</title><style>body{background-color:#0c1210;color:#dee7e4;font-family:Hiragino Maru Gothic Pro,BIZ UDGothic,Roboto,HelveticaNeue,Arial,sans-serif;line-height:1.35;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box}.icon{max-width:120px;width:100%;height:auto;margin-bottom:20px;}.message{text-align:center;font-size:20px;font-weight:700;margin-bottom:12px}.description{text-align:center;font-size:15px;opacity:.85;margin-bottom:20px;max-width:28em}.version{text-align:center;font-size:90%;margin-bottom:20px}button{padding:7px 14px;min-width:100px;font-weight:700;font-family:Hiragino Maru Gothic Pro,BIZ UDGothic,Roboto,HelveticaNeue,Arial,sans-serif;line-height:1.35;border-radius:99rem;background-color:#b4e900;color:#192320;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent}button:hover{background-color:#c6ff03}</style></head><body><svg class="icon"fill="none"height="24"stroke="currentColor"stroke-linecap="round"stroke-linejoin="round"stroke-width="2"viewBox="0 0 24 24"width="24"xmlns="http://www.w3.org/2000/svg"><path d="M0 0h24v24H0z"fill="none"stroke="none"/><path d="M9.58 5.548c.24 -.11 .492 -.207 .752 -.286c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 .957 -.383 1.824 -1.003 2.454m-2.997 1.033h-11.343c-2.572 -.004 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.13 -.582 .37 -1.128 .7 -1.62"/><path d="M3 3l18 18"/></svg><div class="message">${messages.header}</div><div class="description">${messages.description}</div><div class="version">${detail}</div><button onclick="reloadPage()">${messages.reload}</button><script>function reloadPage(){location.reload(!0)}</script></body></html>`;
 }
 
 globalThis.addEventListener('install', (ev) => {
