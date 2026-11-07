@@ -589,6 +589,35 @@ export class MiMeta {
 	})
 	public bannedEmailDomains: string[];
 
+	/**
+	 * このMXホスト（およびそのサブドメイン）で受信するメールアドレスを拒否する
+	 */
+	@Column('varchar', {
+		length: 1024,
+		array: true,
+		default: '{}',
+	})
+	public bannedEmailMxHosts: string[];
+
+	/**
+	 * 公開捨てアドリストに該当したメールアドレスを拒否するか。
+	 * falseの場合は拒否せず、記録（SystemWebhook通知）のみ行う
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public enableDisposableEmailDomainList: boolean;
+
+	/**
+	 * 公開捨てアドリストの判定から除外するドメイン（およびそのサブドメイン）
+	 */
+	@Column('varchar', {
+		length: 1024,
+		array: true,
+		default: '{}',
+	})
+	public disposableEmailDomainListExclusions: string[];
+
 	@Column('varchar', {
 		length: 1024, array: true, default: ['admin', 'administrator', 'root', 'system', 'maintainer', 'host', 'mod', 'moderator', 'owner', 'superuser', 'staff', 'auth', 'i', 'me', 'everyone', 'all', 'mention', 'mentions', 'example', 'user', 'users', 'account', 'accounts', 'official', 'help', 'helps', 'support', 'supports', 'info', 'information', 'informations', 'announce', 'announces', 'announcement', 'announcements', 'notice', 'notification', 'notifications', 'dev', 'developer', 'developers', 'tech', 'misskey'],
 	})

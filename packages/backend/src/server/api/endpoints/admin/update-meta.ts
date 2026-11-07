@@ -4,10 +4,12 @@
  */
 
 import { Injectable, Inject } from '@nestjs/common';
+import { InvalidHostError, normalizeHostList } from '@/misc/normalize-host-list.js';
 import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
+import { ApiError } from '@/server/api/error.js';
 import { MetaService } from '@/core/MetaService.js';
 
 export const meta = {
@@ -16,6 +18,14 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:meta',
+
+	errors: {
+		invalidHost: {
+			message: 'The host list contains an invalid host.',
+			code: 'INVALID_HOST',
+			id: 'caf52276-ea08-4cd5-86bf-37eca9e7d333',
+		},
+	},
 } as const;
 
 export const paramDef = {
@@ -154,6 +164,9 @@ export const paramDef = {
 		enableIdenticonGeneration: { type: 'boolean' },
 		serverRules: { type: 'array', items: { type: 'string' } },
 		bannedEmailDomains: { type: 'array', items: { type: 'string' } },
+		bannedEmailMxHosts: { type: 'array', items: { type: 'string' } },
+		enableDisposableEmailDomainList: { type: 'boolean' },
+		disposableEmailDomainListExclusions: { type: 'array', items: { type: 'string' } },
 		preservedUsernames: { type: 'array', items: { type: 'string' } },
 		manifestJsonOverride: { type: 'string' },
 		enableFanoutTimeline: { type: 'boolean' },
@@ -231,6 +244,16 @@ export const paramDef = {
 	},
 	required: [],
 } as const;
+
+function normalizeHosts(hosts: string[]): string[] {
+	try {
+		return normalizeHostList(hosts);
+	} catch (err) {
+		// 長いリストのどの行かが分かるように、メッセージにも含める
+		if (err instanceof InvalidHostError) throw new ApiError({ ...meta.errors.invalidHost, message: `${meta.errors.invalidHost.message} (${err.host})` }, { host: err.host });
+		throw err;
+	}
+}
 
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
@@ -708,6 +731,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.bannedEmailDomains !== undefined) {
 				set.bannedEmailDomains = ps.bannedEmailDomains;
+			}
+
+			if (ps.bannedEmailMxHosts !== undefined) {
+				set.bannedEmailMxHosts = normalizeHosts(ps.bannedEmailMxHosts);
+			}
+
+			if (ps.enableDisposableEmailDomainList !== undefined) {
+				set.enableDisposableEmailDomainList = ps.enableDisposableEmailDomainList;
+			}
+
+			if (ps.disposableEmailDomainListExclusions !== undefined) {
+				set.disposableEmailDomainListExclusions = normalizeHosts(ps.disposableEmailDomainListExclusions);
 			}
 
 			if (ps.urlPreviewEnabled !== undefined) {

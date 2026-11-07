@@ -17,7 +17,7 @@ import { LoggerService } from '@/core/LoggerService.js';
 import Logger from '@/logger.js';
 import { Packed } from '@/misc/json-schema.js';
 import { AbuseReportResolveType } from '@/models/AbuseUserReport.js';
-import { ModeratorInactivityRemainingTime } from '@/queue/processors/CheckModeratorsActivityProcessorService.js';
+import type { ModeratorInactivityRemainingTime } from '@/queue/processors/CheckModeratorsActivityProcessorService.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
 
 export type AbuseReportPayload = {
@@ -41,11 +41,24 @@ export type InactiveModeratorsWarningPayload = {
 	remainingTime: ModeratorInactivityRemainingTime;
 };
 
+export type EmailBlockedPayload = {
+	/** ローカル部を伏せたメールアドレス */
+	maskedEmail: string;
+	domain: string;
+	via: 'signup' | 'updateEmail';
+	source: 'activeValidation' | 'bannedDomain' | 'disposableList' | 'mx';
+	/** 一致したMXホストや理由など、判定の根拠 */
+	matched: string | null;
+	/** falseなら拒否はしておらず、記録のみ */
+	enforced: boolean;
+};
+
 export type SystemWebhookPayload<T extends SystemWebhookEventType> =
 	T extends 'abuseReport' | 'abuseReportResolved' ? AbuseReportPayload :
 	T extends 'userCreated' ? Packed<'UserLite'> :
 	T extends 'inactiveModeratorsWarning' ? InactiveModeratorsWarningPayload :
 	T extends 'inactiveModeratorsInvitationOnlyChanged' ? Record<string, never> :
+	T extends 'emailBlocked' ? EmailBlockedPayload :
 		never;
 
 @Injectable()

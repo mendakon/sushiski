@@ -326,6 +326,17 @@ export class WebhookTestService {
 				send('inactiveModeratorsInvitationOnlyChanged', {});
 				break;
 			}
+			case 'emailBlocked': {
+				send('emailBlocked', {
+					maskedEmail: 'a***@example.com',
+					domain: 'example.com',
+					via: 'signup',
+					source: 'mx',
+					matched: 'mx.example.com',
+					enforced: true,
+				});
+				break;
+			}
 			default: {
 				const _exhaustiveAssertion: never = params.type;
 				return;

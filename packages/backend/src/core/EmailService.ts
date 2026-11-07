@@ -3,10 +3,14 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import * as dns from 'node:dns';
+import * as fs from 'node:fs/promises';
+import { resolve } from 'node:path';
 import * as nodemailer from 'nodemailer';
 import juice from 'juice';
 import sanitizeHtml from 'sanitize-html';
 import { Inject, Injectable } from '@nestjs/common';
+import * as Redis from 'ioredis';
 import { UtilityService } from '@/core/UtilityService.js';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
@@ -16,14 +20,53 @@ import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { escapeHtml } from '@/misc/escape-html.js';
+import { SystemWebhookService } from '@/core/SystemWebhookService.js';
+import type { EmailBlockedPayload } from '@/core/SystemWebhookService.js';
+
+type EmailValidationReason = 'used' | 'format' | 'disposable' | 'mx' | 'smtp' | 'banned' | 'network' | 'blacklist';
+
+type EmailValidationResult = {
+	available: boolean;
+	reason: null | EmailValidationReason;
+};
+
+/** 判定の根拠。MXの登録内容などが漏れないよう、APIのレスポンスには含めない */
+type EmailBlockDetail = {
+	source: EmailBlockedPayload['source'];
+	matched: string | null;
+	enforced: boolean;
+};
+
+const DISPOSABLE_EMAIL_DOMAIN_LIST_PATH = 'packages/backend/data/disposable-email-domains/domains.txt';
+// 登録中の利用者を待たせる処理なので、Resolver側の再試行とは別に全体の上限を設ける
+const MX_LOOKUP_DEADLINE_MS = 3000;
+const EMAIL_BLOCKED_NOTIFY_INTERVAL_SEC = 60 * 10;
+const EMAIL_BLOCKED_NOTIFY_MAX_PER_INTERVAL = 30;
+
+/**
+ * 誰でもサブドメインを作れるサフィックス。リストに載っていても配下すべてが捨てアドとは限らないので、
+ * 親ドメインとしては照合しない（完全一致なら拒否する）
+ */
+const DISPOSABLE_LIST_SHARED_SUFFIXES = new Set([
+	'3utilities.com', 'biz.st', 'ch.tc', 'cloudns.asia', 'cloudns.cc', 'cloudns.cf', 'cloudns.cx', 'cloudns.gq',
+	'cloudns.org', 'co.cc', 'ddns.net', 'ddnsfree.com', 'dnsiskinky.com', 'dyn.ddnss.de', 'dyn.home-webserver.de',
+	'dyndns.ddnss.de', 'dyndns.org', 'dynu.net', 'gleeze.com', 'hopto.org', 'it.com', 'kozow.com', 'mooo.com',
+	'msk.ru', 'no-ip.net', 'noip.me', 'onthewifi.com', 'or.ru', 'pp.ua', 'servebeer.com', 'serveexchange.com',
+	'servegame.com', 'sytes.net', 'us.to', 'webhop.me', 'za.com',
+]);
 
 @Injectable()
 export class EmailService {
 	private logger: Logger;
+	private disposableEmailDomains: Promise<Set<string>> | null = null;
+	private resolver = new dns.promises.Resolver({ timeout: 1000, tries: 2 });
 
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
+
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
 
 		@Inject(DI.meta)
 		private meta: MiMeta,
@@ -34,6 +77,7 @@ export class EmailService {
 		private loggerService: LoggerService,
 		private utilityService: UtilityService,
 		private httpRequestService: HttpRequestService,
+		private systemWebhookService: SystemWebhookService,
 	) {
 		this.logger = this.loggerService.getLogger('email');
 	}
@@ -164,10 +208,31 @@ export class EmailService {
 	}
 
 	@bindThis
-	public async validateEmailForAccount(emailAddress: string): Promise<{
-		available: boolean;
-		reason: null | 'used' | 'format' | 'disposable' | 'mx' | 'smtp' | 'banned' | 'network' | 'blacklist';
-	}> {
+	public async validateEmailForAccount(emailAddress: string): Promise<EmailValidationResult> {
+		const { available, reason } = await this.checkEmailForAccount(emailAddress);
+		return { available, reason };
+	}
+
+	/**
+	 * 実際にメールアドレスを登録する操作向けの検証。判定に該当した場合はSystemWebhookで通知する。
+	 * 未認証で呼べて入力中にも発火する email-address/available からは呼ばないこと。
+	 */
+	@bindThis
+	public async validateEmailForAccountAndNotify(emailAddress: string, via: EmailBlockedPayload['via']): Promise<EmailValidationResult> {
+		const { available, reason, detail } = await this.checkEmailForAccount(emailAddress);
+
+		if (detail != null) {
+			// 通知の失敗や遅延を登録処理に影響させない
+			this.notifyEmailBlocked(emailAddress, via, detail).catch(err => {
+				this.logger.warn(`Failed to notify blocked email: ${err}`);
+			});
+		}
+
+		return { available, reason };
+	}
+
+	@bindThis
+	private async checkEmailForAccount(emailAddress: string): Promise<EmailValidationResult & { detail?: EmailBlockDetail }> {
 		if (!this.utilityService.validateEmailFormat(emailAddress)) {
 			return {
 				available: false,
@@ -220,26 +285,176 @@ export class EmailService {
 				blacklist: 'blacklist',
 			};
 
+			const reason = validated.reason ? formatReason[validated.reason] ?? null : null;
+
 			return {
 				available: false,
-				reason: validated.reason ? formatReason[validated.reason] ?? null : null,
+				reason,
+				...(reason === 'disposable' || reason === 'blacklist' ? {
+					detail: { source: 'activeValidation', matched: reason, enforced: true },
+				} : {}),
 			};
 		}
 
-		const emailDomain: string = emailAddress.split('@')[1];
+		const emailDomain = this.getEmailDomain(emailAddress);
 		const isBanned = this.utilityService.isBlockedHost(this.meta.bannedEmailDomains, emailDomain);
 
 		if (isBanned) {
 			return {
 				available: false,
 				reason: 'banned',
+				detail: {
+					source: 'bannedDomain',
+					matched: this.meta.bannedEmailDomains.find(x => this.utilityService.isBlockedHost([x], emailDomain)) ?? emailDomain,
+					enforced: true,
+				},
+			};
+		}
+
+		// MX判定はネットワークを使うので最後に行う。ただし公開リストが記録のみの場合はMXで拒否できる可能性が残る
+		const listMatched = await this.matchDisposableEmailDomainList(emailDomain);
+
+		if (listMatched != null && this.meta.enableDisposableEmailDomainList) {
+			return {
+				available: false,
+				reason: 'disposable',
+				detail: { source: 'disposableList', matched: listMatched, enforced: true },
+			};
+		}
+
+		const mxMatched = await this.matchBannedMxHost(emailDomain);
+
+		if (mxMatched != null) {
+			return {
+				available: false,
+				reason: 'disposable',
+				detail: { source: 'mx', matched: mxMatched, enforced: true },
 			};
 		}
 
 		return {
 			available: true,
 			reason: null,
+			...(listMatched != null ? {
+				detail: { source: 'disposableList', matched: listMatched, enforced: false },
+			} : {}),
 		};
+	}
+
+	@bindThis
+	private getEmailDomain(emailAddress: string): string {
+		return emailAddress.slice(emailAddress.lastIndexOf('@') + 1).toLowerCase();
+	}
+
+	@bindThis
+	private loadDisposableEmailDomains(): Promise<Set<string>> {
+		this.disposableEmailDomains ??= fs.readFile(resolve(this.config.rootDir, DISPOSABLE_EMAIL_DOMAIN_LIST_PATH), 'utf-8')
+			.then(text => new Set(text.split('\n').map(x => x.trim().toLowerCase()).filter(x => x !== '')))
+			.catch(err => {
+				// リストが読めなくても登録は止めない。次回の判定で読み直す
+				this.disposableEmailDomains = null;
+				this.logger.warn(`Failed to load disposable email domain list: ${err}`);
+				return new Set<string>();
+			});
+
+		return this.disposableEmailDomains;
+	}
+
+	/**
+	 * 公開捨てアドリストに一致したドメインを返す。サブドメインも親ドメインで判定する
+	 */
+	@bindThis
+	private async matchDisposableEmailDomainList(emailDomain: string): Promise<string | null> {
+		if (this.utilityService.isBlockedHost(this.meta.disposableEmailDomainListExclusions, emailDomain)) return null;
+
+		const domains = await this.loadDisposableEmailDomains();
+
+		const labels = emailDomain.split('.');
+		for (let i = 0; i < labels.length - 1; i++) {
+			const candidate = labels.slice(i).join('.');
+			if (i > 0 && DISPOSABLE_LIST_SHARED_SUFFIXES.has(candidate)) continue;
+			if (domains.has(candidate)) return candidate;
+		}
+
+		return null;
+	}
+
+	/**
+	 * 拒否対象のMXホストに一致したホスト名を返す。
+	 * DNSの障害で登録全体を止めないよう、解決に失敗した場合は不一致として扱う
+	 */
+	@bindThis
+	private async matchBannedMxHost(emailDomain: string): Promise<string | null> {
+		const bannedMxHosts = this.meta.bannedEmailMxHosts;
+		if (bannedMxHosts.length === 0) return null;
+
+		let mxHosts: string[];
+		try {
+			mxHosts = await this.resolveMxHosts(emailDomain);
+		} catch (err) {
+			const code = (err as NodeJS.ErrnoException).code;
+			if (code !== dns.NOTFOUND && code !== dns.NODATA) {
+				this.logger.warn(`Failed to resolve MX of ${emailDomain}: ${code ?? err}`);
+			}
+			return null;
+		}
+
+		return mxHosts
+			.map(x => x.toLowerCase().replace(/\.+$/, ''))
+			.find(x => this.utilityService.isBlockedHost(bannedMxHosts, x)) ?? null;
+	}
+
+	@bindThis
+	private async resolveMxHosts(emailDomain: string): Promise<string[]> {
+		let timer: NodeJS.Timeout | undefined;
+		const deadline = new Promise<never>((_, reject) => {
+			timer = setTimeout(() => reject(Object.assign(new Error('MX lookup deadline exceeded'), { code: dns.TIMEOUT })), MX_LOOKUP_DEADLINE_MS);
+		});
+
+		try {
+			const records = await Promise.race([this.resolver.resolveMx(emailDomain), deadline]);
+			return records.map(x => x.exchange);
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	@bindThis
+	private maskEmailAddress(emailAddress: string): string {
+		const at = emailAddress.lastIndexOf('@');
+		return `${emailAddress.slice(0, 1)}***@${emailAddress.slice(at + 1).toLowerCase()}`;
+	}
+
+	/**
+	 * 同じ判定の通知は一定時間に1回にまとめ、全体の件数にも上限を設ける（ワーカーをまたいで共有するためRedisを使う）。
+	 * 公開リストと禁止ドメインはサブドメインでも一致するので、ランダムなサブドメインで間引きを回避されないよう一致した値で束ねる
+	 */
+	@bindThis
+	private async notifyEmailBlocked(emailAddress: string, via: EmailBlockedPayload['via'], detail: EmailBlockDetail): Promise<void> {
+		const domain = this.getEmailDomain(emailAddress);
+
+		const groupedByMatch = detail.source === 'disposableList' || detail.source === 'bannedDomain';
+		const key = groupedByMatch ? detail.matched ?? domain : domain;
+
+		const acquired = await this.redisClient.set(`emailBlockedNotified:${detail.source}:${key}`, '1', 'EX', EMAIL_BLOCKED_NOTIFY_INTERVAL_SEC, 'NX');
+		if (acquired == null) return;
+
+		const countKey = 'emailBlockedNotifiedCount';
+		// 初期化とTTLの設定を同時に行い、カウンターがTTLなしで残って通知が止まり続けることを防ぐ
+		const results = await this.redisClient.multi()
+			.set(countKey, '0', 'EX', EMAIL_BLOCKED_NOTIFY_INTERVAL_SEC, 'NX')
+			.incr(countKey)
+			.exec();
+		const [incrError, count] = results?.[1] ?? [new Error('Redis transaction aborted'), null];
+		if (incrError != null) throw incrError;
+		if ((count as number) > EMAIL_BLOCKED_NOTIFY_MAX_PER_INTERVAL) return;
+
+		await this.systemWebhookService.enqueueSystemWebhook('emailBlocked', {
+			maskedEmail: this.maskEmailAddress(emailAddress),
+			domain,
+			via,
+			...detail,
+		});
 	}
 
 	private async verifyMail(emailAddress: string, verifymailAuthKey: string): Promise<{

@@ -151,7 +151,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 				</SearchMarker>
 
-				<SearchMarker v-slot="slotProps" :keywords="['banned', 'email', 'domains', 'blacklist']">
+				<SearchMarker v-slot="slotProps" :keywords="['banned', 'email', 'domains', 'blacklist', 'mx', 'disposable']">
 					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
 						<template #label><SearchLabel>Banned Email Domains</SearchLabel></template>
 						<template v-if="bannedEmailDomainsForm.modified.value" #footer>
@@ -162,6 +162,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<SearchMarker>
 								<MkTextarea v-model="bannedEmailDomainsForm.state.bannedEmailDomains">
 									<template #label><SearchLabel>Banned Email Domains List</SearchLabel></template>
+								</MkTextarea>
+							</SearchMarker>
+
+							<SearchMarker>
+								<MkTextarea v-model="bannedEmailDomainsForm.state.bannedEmailMxHosts">
+									<template #label><SearchLabel>{{ i18n.ts._emailBlock.bannedMxHosts }}</SearchLabel></template>
+									<template #caption><SearchText>{{ i18n.ts._emailBlock.bannedMxHostsDescription }}</SearchText></template>
+								</MkTextarea>
+							</SearchMarker>
+
+							<SearchMarker>
+								<MkSwitch v-model="bannedEmailDomainsForm.state.enableDisposableEmailDomainList">
+									<template #label><SearchLabel>{{ i18n.ts._emailBlock.enableDisposableList }}</SearchLabel></template>
+									<template #caption><SearchText>{{ i18n.ts._emailBlock.enableDisposableListDescription }}</SearchText></template>
+								</MkSwitch>
+							</SearchMarker>
+
+							<SearchMarker>
+								<MkTextarea v-model="bannedEmailDomainsForm.state.disposableEmailDomainListExclusions">
+									<template #label><SearchLabel>{{ i18n.ts._emailBlock.disposableListExclusions }}</SearchLabel></template>
+									<template #caption><SearchText>{{ i18n.ts._emailBlock.disposableListExclusionsDescription }}</SearchText></template>
 								</MkTextarea>
 							</SearchMarker>
 						</div>
@@ -275,9 +296,15 @@ const emailValidationForm = useForm({
 
 const bannedEmailDomainsForm = useForm({
 	bannedEmailDomains: meta.bannedEmailDomains?.join('\n') || '',
+	bannedEmailMxHosts: meta.bannedEmailMxHosts?.join('\n') || '',
+	enableDisposableEmailDomainList: meta.enableDisposableEmailDomainList ?? false,
+	disposableEmailDomainListExclusions: meta.disposableEmailDomainListExclusions?.join('\n') || '',
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
 		bannedEmailDomains: state.bannedEmailDomains.split('\n'),
+		bannedEmailMxHosts: state.bannedEmailMxHosts.split('\n'),
+		enableDisposableEmailDomainList: state.enableDisposableEmailDomainList,
+		disposableEmailDomainListExclusions: state.disposableEmailDomainListExclusions.split('\n'),
 	});
 	fetchInstance(true);
 });

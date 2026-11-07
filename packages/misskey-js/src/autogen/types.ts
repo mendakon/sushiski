@@ -5614,7 +5614,7 @@ export type components = {
             latestSentAt: string | null;
             latestStatus: number | null;
             name: string;
-            on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+            on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'emailBlocked')[];
             url: string;
             secret: string;
         };
@@ -9464,6 +9464,9 @@ export interface operations {
                         prohibitedWords: string[];
                         prohibitedWordsForNameOfUser: string[];
                         bannedEmailDomains?: string[];
+                        bannedEmailMxHosts?: string[];
+                        enableDisposableEmailDomainList?: boolean;
+                        disposableEmailDomainListExclusions?: string[];
                         preservedUsernames: string[];
                         hcaptchaSecretKey: string | null;
                         mcaptchaSecretKey: string | null;
@@ -12221,7 +12224,7 @@ export interface operations {
                 'application/json': {
                     isActive: boolean;
                     name: string;
-                    on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+                    on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'emailBlocked')[];
                     url: string;
                     /** @default  */
                     secret?: string;
@@ -12353,7 +12356,7 @@ export interface operations {
             content: {
                 'application/json': {
                     isActive?: boolean;
-                    on?: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+                    on?: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'emailBlocked')[];
                 };
             };
         };
@@ -12487,7 +12490,7 @@ export interface operations {
                     /** Format: misskey:id */
                     webhookId: string;
                     /** @enum {string} */
-                    type: 'abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged';
+                    type: 'abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'emailBlocked';
                     override?: {
                         url?: string;
                         secret?: string;
@@ -12566,7 +12569,7 @@ export interface operations {
                     id: string;
                     isActive: boolean;
                     name: string;
-                    on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+                    on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'emailBlocked')[];
                     url: string;
                     /** @default  */
                     secret?: string;
@@ -13055,6 +13058,9 @@ export interface operations {
                     enableIdenticonGeneration?: boolean;
                     serverRules?: string[];
                     bannedEmailDomains?: string[];
+                    bannedEmailMxHosts?: string[];
+                    enableDisposableEmailDomainList?: boolean;
+                    disposableEmailDomainListExclusions?: string[];
                     preservedUsernames?: string[];
                     manifestJsonOverride?: string;
                     enableFanoutTimeline?: boolean;
@@ -20854,6 +20860,15 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

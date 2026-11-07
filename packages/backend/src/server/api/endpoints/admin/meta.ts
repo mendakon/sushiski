@@ -197,6 +197,26 @@ export const meta = {
 					optional: false, nullable: false,
 				},
 			},
+			bannedEmailMxHosts: {
+				type: 'array',
+				optional: true, nullable: false,
+				items: {
+					type: 'string',
+					optional: false, nullable: false,
+				},
+			},
+			enableDisposableEmailDomainList: {
+				type: 'boolean',
+				optional: true, nullable: false,
+			},
+			disposableEmailDomainListExclusions: {
+				type: 'array',
+				optional: true, nullable: false,
+				items: {
+					type: 'string',
+					optional: false, nullable: false,
+				},
+			},
 			preservedUsernames: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -750,6 +770,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				enableServerMachineStats: instance.enableServerMachineStats,
 				enableIdenticonGeneration: instance.enableIdenticonGeneration,
 				bannedEmailDomains: instance.bannedEmailDomains,
+				bannedEmailMxHosts: instance.bannedEmailMxHosts,
+				enableDisposableEmailDomainList: instance.enableDisposableEmailDomainList,
+				disposableEmailDomainListExclusions: instance.disposableEmailDomainListExclusions,
 				policies: { ...DEFAULT_POLICIES, ...instance.policies },
 				manifestJsonOverride: instance.manifestJsonOverride,
 				enableFanoutTimeline: instance.enableFanoutTimeline,

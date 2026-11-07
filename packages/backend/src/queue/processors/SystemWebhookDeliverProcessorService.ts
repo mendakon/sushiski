@@ -12,6 +12,7 @@ import type Logger from '@/logger.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { StatusError } from '@/misc/status-error.js';
 import { bindThis } from '@/decorators.js';
+import { buildDiscordWebhookBody, isDiscordWebhookUrl } from '@/misc/discord-webhook.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import { SystemWebhookDeliverJobData } from '../types.js';
 
@@ -37,7 +38,15 @@ export class SystemWebhookDeliverProcessorService {
 		try {
 			this.logger.debug(`delivering ${job.data.webhookId}`);
 
-			const res = await this.httpRequestService.send(job.data.to, {
+			const request: { method: string; headers: Record<string, string>; body: string } = isDiscordWebhookUrl(job.data.to) ? {
+				// Discordはこの形式しか受け取らず、secretも使わないので送らない
+				method: 'POST',
+				headers: {
+					'User-Agent': 'Misskey-Hooks',
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(buildDiscordWebhookBody(job.data.type, job.data.content, this.config.url)),
+			} : {
 				method: 'POST',
 				headers: {
 					'User-Agent': 'Misskey-Hooks',
@@ -54,7 +63,9 @@ export class SystemWebhookDeliverProcessorService {
 					type: job.data.type,
 					body: job.data.content,
 				}),
-			}, {
+			};
+
+			const res = await this.httpRequestService.send(job.data.to, request, {
 				throwErrorWhenResponseNotOk: true,
 				discardBody: true,
 			});
