@@ -7,8 +7,6 @@ on:
       - locales/**
       - .github/workflows/locale.yml
   pull_request:
-    branches-ignore:
-      - master
     paths:
       - packages/i18n/**
       - locales/**
