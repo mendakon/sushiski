@@ -123,7 +123,7 @@ export class SignupApiService {
 				return;
 			}
 
-			const res = await this.emailService.validateEmailForAccount(emailAddress);
+			const res = await this.emailService.validateEmailForAccountAndNotify(emailAddress, 'signup');
 			if (!res.available) {
 				reply.code(400);
 				return;

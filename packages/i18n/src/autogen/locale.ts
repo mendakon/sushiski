@@ -8439,6 +8439,32 @@ export interface Locale extends ILocale {
          */
         "maxImagesPerRequestDescription": string;
     };
+    "_emailBlock": {
+        /**
+         * 拒否するメールサーバー (MX)
+         */
+        "bannedMxHosts": string;
+        /**
+         * 改行で列挙します。指定したホストとそのサブドメインで受信するメールアドレスを拒否します。ドメインを変えても同じサーバーを使う捨てアドに有効です。
+         */
+        "bannedMxHostsDescription": string;
+        /**
+         * 公開リストに該当したメールアドレスを拒否する
+         */
+        "enableDisposableList": string;
+        /**
+         * オフの場合は拒否せず、Webhookへの通知だけを行います。
+         */
+        "enableDisposableListDescription": string;
+        /**
+         * 公開リストの除外ドメイン
+         */
+        "disposableListExclusions": string;
+        /**
+         * 改行で列挙します。公開リストに誤って含まれるドメインを指定すると、公開リストの判定から除外されます。MXの判定には影響しません。
+         */
+        "disposableListExclusionsDescription": string;
+    };
     "_emailUnavailable": {
         /**
          * 既に使用されています
@@ -11385,6 +11411,10 @@ export interface Locale extends ILocale {
              * モデレーターが一定期間非アクティブだったため、システムにより招待制へと変更されたとき
              */
             "inactiveModeratorsInvitationOnlyChanged": string;
+            /**
+             * メールアドレスが捨てアド等の判定に該当したとき
+             */
+            "emailBlocked": string;
         };
         /**
          * Webhookを削除しますか？

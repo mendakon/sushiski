@@ -102,7 +102,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.email != null) {
-				const res = await this.emailService.validateEmailForAccount(ps.email);
+				const res = await this.emailService.validateEmailForAccountAndNotify(ps.email, 'updateEmail');
 				if (!res.available) {
 					throw new ApiError(meta.errors.unavailable);
 				}

@@ -2190,6 +2190,13 @@ _sensitiveMediaDetection:
   maxImagesPerRequest: "1リクエストあたりの最大画像数"
   maxImagesPerRequestDescription: "動画など複数フレームを判定する際、1回のリクエストにまとめて送る画像の最大枚数です。これを超える分は分割して順次送信されます。sensitive-detector 側の maxParts 設定（デフォルト: 10）を超えないように設定してください。超えた場合、そのチャンクは全件非センシティブ扱いとなります。"
 
+_emailBlock:
+  bannedMxHosts: "拒否するメールサーバー (MX)"
+  bannedMxHostsDescription: "改行で列挙します。指定したホストとそのサブドメインで受信するメールアドレスを拒否します。ドメインを変えても同じサーバーを使う捨てアドに有効です。"
+  enableDisposableList: "公開リストに該当したメールアドレスを拒否する"
+  enableDisposableListDescription: "オフの場合は拒否せず、Webhookへの通知だけを行います。"
+  disposableListExclusions: "公開リストの除外ドメイン"
+  disposableListExclusionsDescription: "改行で列挙します。公開リストに誤って含まれるドメインを指定すると、公開リストの判定から除外されます。MXの判定には影響しません。"
 _emailUnavailable:
   used: "既に使用されています"
   format: "形式が正しくありません"
@@ -3017,6 +3024,7 @@ _webhookSettings:
     userCreated: "ユーザーが作成されたとき"
     inactiveModeratorsWarning: "モデレーターが一定期間非アクティブになったとき"
     inactiveModeratorsInvitationOnlyChanged: "モデレーターが一定期間非アクティブだったため、システムにより招待制へと変更されたとき"
+    emailBlocked: "メールアドレスが捨てアド等の判定に該当したとき"
   deleteConfirm: "Webhookを削除しますか？"
   testRemarks: "スイッチの右にあるボタンをクリックするとダミーのデータを使用したテスト用Webhookを送信できます。"
 

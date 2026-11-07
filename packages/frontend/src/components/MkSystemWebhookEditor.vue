@@ -67,6 +67,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkSwitch>
 								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.inactiveModeratorsInvitationOnlyChanged)" @click="test('inactiveModeratorsInvitationOnlyChanged')"><i class="ti ti-send"></i></MkButton>
 							</div>
+							<div :class="$style.switchBox">
+								<MkSwitch v-model="events.emailBlocked" :disabled="disabledEvents.emailBlocked">
+									<template #label>{{ i18n.ts._webhookSettings._systemEvents.emailBlocked }}</template>
+								</MkSwitch>
+								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.emailBlocked)" @click="test('emailBlocked')"><i class="ti ti-send"></i></MkButton>
+							</div>
 						</div>
 
 						<div v-show="mode === 'edit'" :class="$style.description">
@@ -114,6 +120,7 @@ type EventType = {
 	userCreated: boolean;
 	inactiveModeratorsWarning: boolean;
 	inactiveModeratorsInvitationOnlyChanged: boolean;
+	emailBlocked: boolean;
 };
 
 const emit = defineEmits<{
@@ -139,6 +146,7 @@ const events = ref<EventType>({
 	userCreated: true,
 	inactiveModeratorsWarning: true,
 	inactiveModeratorsInvitationOnlyChanged: true,
+	emailBlocked: true,
 });
 const isActive = ref<boolean>(true);
 
@@ -148,6 +156,7 @@ const disabledEvents = ref<EventType>({
 	userCreated: false,
 	inactiveModeratorsWarning: false,
 	inactiveModeratorsInvitationOnlyChanged: false,
+	emailBlocked: false,
 });
 
 const disableSubmitButton = computed(() => {
