@@ -307,7 +307,7 @@ export class WebhookTestService {
 				break;
 			}
 			case 'userCreated': {
-				send('userCreated', await this.toPackedUserLite(dummyUser1));
+				send('userCreated', { ...await this.toPackedUserLite(dummyUser1), email: 'dummy@example.com' });
 				break;
 			}
 			case 'inactiveModeratorsWarning': {

@@ -227,6 +227,7 @@ describe('WebhookTestService', () => {
 			expect((calls[0] as any).id).toBe('dummy-webhook');
 			expect(calls[1]).toBe('userCreated');
 			expect((calls[2] as any).id).toBe('dummy-user-1');
+			expect((calls[2] as any).email).toBe('dummy@example.com');
 		});
 	});
 });

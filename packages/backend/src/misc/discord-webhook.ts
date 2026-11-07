@@ -50,6 +50,13 @@ function truncate(text: string): string {
 	return `${text.slice(0, DISCORD_CONTENT_MAX_LENGTH - 1).replace(/[\uD800-\uDBFF]$/, '')}…`;
 }
 
+/**
+ * メールアドレスやユーザー名の _ や * でDiscordの書式が崩れないようにする
+ */
+function escapeMarkdown(text: string): string {
+	return text.replace(/[\\`*_~|>[\]()#]/g, '\\$&');
+}
+
 function acct(user: { username: string; host: string | null } | null, fallback: string): string {
 	if (user == null) return fallback;
 	return user.host == null ? `@${user.username}` : `@${user.username}@${user.host}`;
@@ -61,7 +68,14 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
 			const user = content as SystemWebhookPayload<'userCreated'>;
 			return {
 				username: '新規登録',
-				content: `新規ユーザー登録がありました。\nserver: <${server}>\nname: ${user.username}\n`,
+				content: [
+					'新規ユーザー登録がありました。',
+					`server: <${server}>`,
+					`name: ${escapeMarkdown(user.username)}`,
+					`mail: ${user.email != null ? escapeMarkdown(user.email) : '（なし）'}`,
+					`url: <${server}/@${encodeURIComponent(user.username)}>`,
+					'',
+				].join('\n'),
 			};
 		}
 		case 'abuseReport':

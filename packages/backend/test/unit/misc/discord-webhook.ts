@@ -50,6 +50,23 @@ describe('buildDiscordWebhookBody', () => {
 		expect(body.content).toContain('name: @bob@remote.example');
 	});
 
+	test('新規登録はメールアドレスとユーザーページのURLを載せる', () => {
+		const body = buildDiscordWebhookBody('userCreated', { username: 'alice_1', email: 'a_b*c@example.com' }, SERVER);
+		expect(body.content).toBe([
+			'新規ユーザー登録がありました。',
+			`server: <${SERVER}>`,
+			'name: alice\\_1',
+			'mail: a\\_b\\*c@example.com',
+			`url: <${SERVER}/@alice_1>`,
+			'',
+		].join('\n'));
+	});
+
+	test('メールアドレスがない新規登録は（なし）と表示する', () => {
+		const body = buildDiscordWebhookBody('userCreated', { username: 'alice', email: null }, SERVER);
+		expect(body.content).toContain('mail: （なし）');
+	});
+
 	test('モデレーター不在の通知も本文になる', () => {
 		const warning = buildDiscordWebhookBody('inactiveModeratorsWarning', { remainingTime: { time: 1, asDays: 2, asHours: 48 } }, SERVER);
 		expect(warning.content).toContain('あと2日');
@@ -77,7 +94,7 @@ describe('SystemWebhookDeliverProcessorService', () => {
 			{ send } as never,
 			{ logger: { createSubLogger: () => ({ debug: vi.fn(), error: vi.fn() }) } } as never,
 		);
-		const job = { data: { to, type: 'userCreated', content: { username: 'alice' }, webhookId: 'w', secret: 'shh', eventId: 'e', createdAt: 0 } };
+		const job = { data: { to, type: 'userCreated', content: { username: 'alice', email: null }, webhookId: 'w', secret: 'shh', eventId: 'e', createdAt: 0 } };
 		return processor.process(job as never).then(() => send.mock.calls[0][1]);
 	}
 
@@ -98,7 +115,7 @@ describe('SystemWebhookDeliverProcessorService', () => {
 				'X-Misskey-Hook-Secret': 'shh',
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({ server: SERVER, hookId: 'w', eventId: 'e', createdAt: 0, type: 'userCreated', body: { username: 'alice' } }),
+			body: JSON.stringify({ server: SERVER, hookId: 'w', eventId: 'e', createdAt: 0, type: 'userCreated', body: { username: 'alice', email: null } }),
 		});
 	});
 });
