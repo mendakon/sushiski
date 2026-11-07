@@ -54,7 +54,7 @@ describe('buildDiscordWebhookBody', () => {
 			comment: '絵の無断転載\nhttps://example.com/notes/abc',
 		}, SERVER);
 		expect(body.content).toBe([
-			'🚨 新しい通報があります。',
+			'🧌 新しい通報があります。',
 			`対象: @bob@remote.example  <${SERVER}/@bob@remote.example>`,
 			`通報者: @alice  <${SERVER}/@alice>`,
 			'内容:',
@@ -79,7 +79,7 @@ describe('buildDiscordWebhookBody', () => {
 		};
 		const accepted = buildDiscordWebhookBody('abuseReportResolved', { ...base, resolvedAs: 'accept' }, SERVER).content;
 		expect(accepted).toBe([
-			'✅ 通報が処理されました。',
+			'🪓 通報が処理されました。（是認）',
 			'結果: 是認（通報の内容を認めて対応した）',
 			`対象: @bob  <${SERVER}/@bob>`,
 			'通報者: id2',
@@ -93,6 +93,7 @@ describe('buildDiscordWebhookBody', () => {
 		].join('\n'));
 
 		const rejected = buildDiscordWebhookBody('abuseReportResolved', { ...base, resolvedAs: 'reject', assigneeId: null, assignee: null, forwarded: false, moderationNote: '' }, SERVER).content;
+		expect(rejected.startsWith('🫠 通報が処理されました。（否認）')).toBe(true);
 		expect(rejected).toContain('結果: 否認（問題なしと判断した）');
 		expect(rejected).not.toContain('処理者');
 		expect(rejected).not.toContain('転送');
@@ -114,7 +115,7 @@ describe('buildDiscordWebhookBody', () => {
 	test('新規登録はメールアドレスとユーザーページのURLを載せる', () => {
 		const body = buildDiscordWebhookBody('userCreated', { username: 'alice_1', email: 'a_b*c@example.com' }, SERVER);
 		expect(body.content).toBe([
-			'新規ユーザー登録がありました。',
+			'🦑 新規ユーザー登録がありました。',
 			'name: alice\\_1',
 			'mail: a\\_b\\*c@example.com',
 			`url: <${SERVER}/@alice_1>`,

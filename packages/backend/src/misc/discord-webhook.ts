@@ -83,6 +83,12 @@ function quote(text: string): string {
 	return trimmed.split(/\r?\n/).map(line => `> ${line}`).join('\n');
 }
 
+const ABUSE_REPORT_RESOLVED_TITLES: Record<NonNullable<AbuseReportPayload['resolvedAs']> | 'unknown', string> = {
+	accept: '🪓 通報が処理されました。（是認）',
+	reject: '🫠 通報が処理されました。（否認）',
+	unknown: '🧹 通報が処理されました。',
+};
+
 const ABUSE_REPORT_RESOLVED_LABELS: Record<NonNullable<AbuseReportPayload['resolvedAs']> | 'unknown', string> = {
 	accept: '是認（通報の内容を認めて対応した）',
 	reject: '否認（問題なしと判断した）',
@@ -96,7 +102,7 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
 			return {
 				username: '新規登録',
 				content: [
-					'新規ユーザー登録がありました。',
+					'🦑 新規ユーザー登録がありました。',
 					`name: ${escapeMarkdown(user.username)}`,
 					`mail: ${user.email != null ? escapeMarkdown(user.email) : '（なし）'}`,
 					`url: <${server}/@${encodeURIComponent(user.username)}>`,
@@ -109,7 +115,7 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
 			const report = content as SystemWebhookPayload<'abuseReport'>;
 			const lines = type === 'abuseReport'
 				? [
-					'🚨 新しい通報があります。',
+					'🧌 新しい通報があります。',
 					userLine('対象', report.targetUser, report.targetUserId, server),
 					userLine('通報者', report.reporter, report.reporterId, server),
 					'内容:',
@@ -117,7 +123,7 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
 					`確認: <${server}/admin/abuses>`,
 				]
 				: [
-					'✅ 通報が処理されました。',
+					ABUSE_REPORT_RESOLVED_TITLES[report.resolvedAs ?? 'unknown'],
 					`結果: ${ABUSE_REPORT_RESOLVED_LABELS[report.resolvedAs ?? 'unknown']}`,
 					userLine('対象', report.targetUser, report.targetUserId, server),
 					userLine('通報者', report.reporter, report.reporterId, server),
@@ -138,13 +144,13 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
 			const time = remainingTime.asDays === 0 ? `${remainingTime.asHours}時間` : `${remainingTime.asDays}日`;
 			return {
 				username: 'モデレーター',
-				content: `モデレーターが一定期間非アクティブです。あと${time}で招待制に変更されます。\n`,
+				content: `🦥 モデレーターが一定期間非アクティブです。あと${time}で招待制に変更されます。\n`,
 			};
 		}
 		case 'inactiveModeratorsInvitationOnlyChanged': {
 			return {
 				username: 'モデレーター',
-				content: 'モデレーターが一定期間非アクティブだったため、招待制に変更されました。\n',
+				content: '🪦 モデレーターが一定期間非アクティブだったため、招待制に変更されました。\n',
 			};
 		}
 		case 'emailBlocked': {
@@ -153,7 +159,7 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
 			return {
 				username: 'メールブロック',
 				content: [
-					enforced ? '🚫 メールアドレスをブロックしました。' : '👀 公開リストに該当しました（記録のみ、拒否はしていません）。',
+					enforced ? '🪤 メールアドレスをブロックしました。' : '🫣 公開リストに該当しました（記録のみ、拒否はしていません）。',
 					`メール: ${maskedEmail}`,
 					`判定: ${matched != null ? `${label}（${matched}）` : label}`,
 					`経路: ${EMAIL_BLOCK_VIA_LABELS[via]}`,
