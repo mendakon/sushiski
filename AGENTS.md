@@ -10,6 +10,17 @@
 
 ---
 
+## ブランチ運用 (sushiski)
+
+sushiski は misskey-dev/misskey の fork で、本家とはブランチの使い方が違う。
+
+- `master`: 本番かつ開発の本流 (GitHub の既定ブランチ)。作業は `feat/…` / `fix/…` / `ci/…` / `docs/…` 等を master から切り、PR で master へ入れる
+- 本番反映中のコミットは `prod-YYYY-MM-DD` タグで示す。本番に出したら新しいタグを付ける (`git log <最新の prod タグ>..master` が未反映分)
+- `deploy` / `develop` / `staging` / 本家由来のブランチ: 使っていない。残しているだけなので、作業の起点や PR の宛先にしない
+- PR は `mendakon/sushiski` の master 宛て。fork なので本家 misskey-dev へ出さない
+
+---
+
 ## 絶対にやってはいけない事
 
 違反すると CI 失敗 / 本番事故 / 共有環境破壊 になる。順守すること。
