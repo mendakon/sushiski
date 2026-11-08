@@ -73,6 +73,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkSwitch>
 								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.emailBlocked)" @click="test('emailBlocked')"><i class="ti ti-send"></i></MkButton>
 							</div>
+							<!-- sushi.ski: 絵文字申請 -->
+							<div :class="$style.switchBox">
+								<MkSwitch v-model="events.emojiRequestCreated" :disabled="disabledEvents.emojiRequestCreated">
+									<template #label>{{ i18n.ts._sushiskiEmojiRequest.webhookEvent }}</template>
+								</MkSwitch>
+								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.emojiRequestCreated)" @click="test('emojiRequestCreated')"><i class="ti ti-send"></i></MkButton>
+							</div>
 						</div>
 
 						<div v-show="mode === 'edit'" :class="$style.description">
@@ -121,6 +128,7 @@ type EventType = {
 	inactiveModeratorsWarning: boolean;
 	inactiveModeratorsInvitationOnlyChanged: boolean;
 	emailBlocked: boolean;
+	emojiRequestCreated: boolean; // sushi.ski: 絵文字申請
 };
 
 const emit = defineEmits<{
@@ -147,6 +155,7 @@ const events = ref<EventType>({
 	inactiveModeratorsWarning: true,
 	inactiveModeratorsInvitationOnlyChanged: true,
 	emailBlocked: true,
+	emojiRequestCreated: true, // sushi.ski: 絵文字申請
 });
 const isActive = ref<boolean>(true);
 
@@ -157,6 +166,7 @@ const disabledEvents = ref<EventType>({
 	inactiveModeratorsWarning: false,
 	inactiveModeratorsInvitationOnlyChanged: false,
 	emailBlocked: false,
+	emojiRequestCreated: false, // sushi.ski: 絵文字申請
 });
 
 const disableSubmitButton = computed(() => {

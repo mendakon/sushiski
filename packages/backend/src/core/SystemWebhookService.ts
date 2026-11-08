@@ -53,12 +53,23 @@ export type EmailBlockedPayload = {
 	enforced: boolean;
 };
 
+// sushi.ski: 絵文字申請
+export type EmojiRequestCreatedPayload = {
+	requestId: string;
+	name: string;
+	comment: string | null;
+	user: { id: string; username: string; host: string | null };
+	/** 申請された画像のURL */
+	fileUrl: string | null;
+};
+
 export type SystemWebhookPayload<T extends SystemWebhookEventType> =
 	T extends 'abuseReport' | 'abuseReportResolved' ? AbuseReportPayload :
 	T extends 'userCreated' ? Packed<'UserLite'> :
 	T extends 'inactiveModeratorsWarning' ? InactiveModeratorsWarningPayload :
 	T extends 'inactiveModeratorsInvitationOnlyChanged' ? Record<string, never> :
 	T extends 'emailBlocked' ? EmailBlockedPayload :
+	T extends 'emojiRequestCreated' ? EmojiRequestCreatedPayload :
 		never;
 
 @Injectable()

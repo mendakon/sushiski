@@ -200,4 +200,11 @@ export const navbarItemDef = reactive<{
 			clearCache();
 		},
 	},
+	// sushi.ski: 絵文字申請
+	emojiRequests: {
+		title: i18n.ts._sushiskiEmojiRequest.title,
+		icon: 'ti ti-icons',
+		show: computed(() => $i != null && $i.policies.canRequestEmojis),
+		to: '/emoji-requests',
+	},
 });

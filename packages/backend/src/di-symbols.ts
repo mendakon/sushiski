@@ -91,5 +91,7 @@ export const DI = {
 	bubbleGameRecordsRepository: Symbol('bubbleGameRecordsRepository'),
 	reversiGamesRepository: Symbol('reversiGamesRepository'),
 	noteDraftsRepository: Symbol('noteDraftsRepository'),
+	// sushi.ski: 絵文字申請
+	emojiRequestsRepository: Symbol('emojiRequestsRepository'),
 	//#endregion
 };

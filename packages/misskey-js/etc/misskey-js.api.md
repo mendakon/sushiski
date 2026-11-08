@@ -209,6 +209,24 @@ type AdminEmojiListResponse = operations['admin___emoji___list']['responses']['2
 type AdminEmojiRemoveAliasesBulkRequest = operations['admin___emoji___remove-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiRequestsApproveRequest = operations['admin___emoji-requests___approve']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiRequestsApproveResponse = operations['admin___emoji-requests___approve']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiRequestsListRequest = operations['admin___emoji-requests___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiRequestsListResponse = operations['admin___emoji-requests___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiRequestsRejectRequest = operations['admin___emoji-requests___reject']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiRequestsRejectResponse = operations['admin___emoji-requests___reject']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiSetAliasesBulkRequest = operations['admin___emoji___set-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1411,6 +1429,21 @@ type EmojiDetailedAdmin = components['schemas']['EmojiDetailedAdmin'];
 type EmojiRequest = operations['emoji']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type EmojiRequestsCancelRequest = operations['emoji-requests___cancel']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type EmojiRequestsCreateRequest = operations['emoji-requests___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type EmojiRequestsCreateResponse = operations['emoji-requests___create']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type EmojiRequestsMyRequest = operations['emoji-requests___my']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type EmojiRequestsMyResponse = operations['emoji-requests___my']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type EmojiResponse = operations['emoji']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
@@ -1579,6 +1612,12 @@ declare namespace entities {
         AdminDriveFilesResponse,
         AdminDriveShowFileRequest,
         AdminDriveShowFileResponse,
+        AdminEmojiRequestsApproveRequest,
+        AdminEmojiRequestsApproveResponse,
+        AdminEmojiRequestsListRequest,
+        AdminEmojiRequestsListResponse,
+        AdminEmojiRequestsRejectRequest,
+        AdminEmojiRequestsRejectResponse,
         AdminEmojiAddRequest,
         AdminEmojiAddResponse,
         AdminEmojiAddAliasesBulkRequest,
@@ -1857,6 +1896,11 @@ declare namespace entities {
         EmailAddressAvailableResponse,
         EmojiRequest,
         EmojiResponse,
+        EmojiRequestsCancelRequest,
+        EmojiRequestsCreateRequest,
+        EmojiRequestsCreateResponse,
+        EmojiRequestsMyRequest,
+        EmojiRequestsMyResponse,
         EmojisResponse,
         EndpointRequest,
         EndpointResponse,
@@ -2268,7 +2312,8 @@ declare namespace entities {
         ChatMessageLiteForRoom,
         ChatRoom,
         ChatRoomInvitation,
-        ChatRoomMembership
+        ChatRoomMembership,
+        SushiskiEmojiRequest
     }
 }
 export { entities }
@@ -3356,7 +3401,7 @@ type RoleLite = components['schemas']['RoleLite'];
 type RolePolicies = components['schemas']['RolePolicies'];
 
 // @public (undocumented)
-export const rolePolicies: readonly ["gtlAvailable", "ltlAvailable", "canPublicNote", "mentionLimit", "canInvite", "inviteLimit", "inviteLimitCycle", "inviteExpirationTime", "canManageCustomEmojis", "canManageAvatarDecorations", "canSearchNotes", "canSearchUsers", "canUseTranslator", "canHideAds", "canCreateChannel", "driveCapacityMb", "maxFileSizeMb", "alwaysMarkNsfw", "canUpdateBioMedia", "pinLimit", "antennaLimit", "wordMuteLimit", "webhookLimit", "clipLimit", "noteEachClipsLimit", "userListLimit", "userEachUserListsLimit", "rateLimitFactor", "avatarDecorationLimit", "canImportAntennas", "canImportBlocking", "canImportFollowing", "canImportMuting", "canImportUserLists", "chatAvailability", "uploadableFileTypes", "noteDraftLimit", "scheduledNoteLimit", "watermarkAvailable"];
+export const rolePolicies: readonly ["gtlAvailable", "ltlAvailable", "canPublicNote", "mentionLimit", "canInvite", "inviteLimit", "inviteLimitCycle", "inviteExpirationTime", "canManageCustomEmojis", "canManageAvatarDecorations", "canSearchNotes", "canSearchUsers", "canUseTranslator", "canHideAds", "canCreateChannel", "driveCapacityMb", "maxFileSizeMb", "alwaysMarkNsfw", "canUpdateBioMedia", "pinLimit", "antennaLimit", "wordMuteLimit", "webhookLimit", "clipLimit", "noteEachClipsLimit", "userListLimit", "userEachUserListsLimit", "rateLimitFactor", "avatarDecorationLimit", "canImportAntennas", "canImportBlocking", "canImportFollowing", "canImportMuting", "canImportUserLists", "chatAvailability", "uploadableFileTypes", "noteDraftLimit", "scheduledNoteLimit", "watermarkAvailable", "canRequestEmojis", "canApproveEmojiRequests"];
 
 // @public (undocumented)
 type RolesListResponse = operations['roles___list']['responses']['200']['content']['application/json'];
@@ -3523,6 +3568,9 @@ export type StreamEvents = {
     _connected_: void;
     _disconnected_: void;
 } & BroadcastEvents;
+
+// @public (undocumented)
+type SushiskiEmojiRequest = components['schemas']['SushiskiEmojiRequest'];
 
 // Warning: (ae-forgotten-export) The symbol "SwitchCase" needs to be exported by the entry point index.d.ts
 // Warning: (ae-forgotten-export) The symbol "IsCaseMatched" needs to be exported by the entry point index.d.ts

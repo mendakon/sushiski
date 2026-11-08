@@ -448,3 +448,10 @@ export * as 'chat/rooms/invitations/outbox' from './endpoints/chat/rooms/invitat
 export * as 'chat/history' from './endpoints/chat/history.js';
 export * as 'chat/read-all' from './endpoints/chat/read-all.js';
 export * as 'v2/admin/emoji/list' from './endpoints/v2/admin/emoji/list.js';
+// sushi.ski: 絵文字申請
+export * as 'emoji-requests/create' from './endpoints/emoji-requests/create.js';
+export * as 'emoji-requests/my' from './endpoints/emoji-requests/my.js';
+export * as 'emoji-requests/cancel' from './endpoints/emoji-requests/cancel.js';
+export * as 'admin/emoji-requests/list' from './endpoints/admin/emoji-requests/list.js';
+export * as 'admin/emoji-requests/approve' from './endpoints/admin/emoji-requests/approve.js';
+export * as 'admin/emoji-requests/reject' from './endpoints/admin/emoji-requests/reject.js';
