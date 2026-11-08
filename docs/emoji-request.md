@@ -1,7 +1,7 @@
 # 絵文字申請機能の調査と設計案
 
 - 作成: 2026-11-07
-- 状態: 設計案（未実装。「未決事項」が決まってから着手する）
+- 状態: 設計案（未実装。未決事項は 2026-11-08 にすべて決定）
 
 ## 概要
 
@@ -98,6 +98,15 @@
 | 承認用の一覧 | 新しいページ。`/admin` 配下（`pages/admin/index.vue` のメニュー）と、ポリシー保持者向けのリンク（`common.ts`）の両方から開く |
 | ロール編集 | `pages/admin/roles.policy-editor.vue` に `canRequestEmojis` と `canApproveEmojiRequests` を追加する |
 
+### 通知
+
+| 誰に | いつ | どうやって |
+|---|---|---|
+| 申請者 | 承認・却下されたとき | すしすきー内の通知。既存の `app` 型の通知（`NotificationService.createNotification(userId, 'app', { appAccessTokenId: null, customHeader, customBody, customIcon })`）を使い、新しい通知の種類は足さない。アイコンには絵文字の画像を使う |
+| 承認者 | 新しい申請が来たとき | Discord。PR #5 の `emailBlocked` と同じく、システム Webhook のイベント `emojiRequestCreated` を足し、`misc/discord-webhook.ts` に文面を足す |
+
+`app` 型を使うと、本家の通知の種類の一覧（backend の `models/Notification.ts`、misskey-js、frontend の `MkNotification.vue`）を触らずに済む。ただし、ユーザーが「アプリからの通知」をミュートしていると届かない。その場合でも、申請ページの自分の申請一覧で状態は見られる。
+
 ### 変更するファイル（予定）
 
 - backend: entity、migration、`RoleService.ts`（ポリシーと既定値）、`models/json-schema/role.ts`、エンドポイント 6 本と endpoint-list への登録、テスト（`test/unit/RoleService.ts` ほか）
@@ -105,14 +114,27 @@
 - frontend: `navbar.ts`、`router.definition.ts`、`ui/_common_/common.ts`、`pages/admin/index.vue`、`roles.policy-editor.vue`、新しいページ 2 つ
 - locale: `locales/ja-JP.yml` のみ（ほかの言語のファイルは Crowdin が管理するので編集しない）
 
-合計で 20 ファイル前後になる見込み。本家の更新を取り込むときに衝突しにくいよう、処理はできるだけ新しいファイルに分ける。
+合計で 20 ファイル前後になる見込み。
+
+## 本家の更新に追従しやすくするための方針
+
+本家の更新を取り込むときの衝突を減らすため、次のようにする。
+
+- **処理は新しいファイルに置く**: entity、サービス (`EmojiRequestService` など)、エンドポイント、ページはすべて新しいファイルにする。本家のファイルに書くのは、登録や呼び出しの 1 行だけにする
+- **本家のファイルへの追記は末尾か一覧の最後にまとめる**: endpoint-list、`RoleService.ts` のポリシー一覧、`navbar.ts`、`ja-JP.yml` などは、既存の行の間に挟まず、ブロックの最後に足す。足した箇所には `// sushi.ski:` のコメントを付け、取り込み時に見つけやすくする
+- **本家の仕組みを使い回す**: 通知は既存の `app` 型、画像の複製は `uploadFromUrl`、絵文字の登録は `CustomEmojiService.add()` を使い、本家の処理を書き換えない
+- **locale のキーは独自の名前空間にまとめる**: `ja-JP.yml` のキーは `_sushiskiEmojiRequest:` の下にまとめ、本家のキーと混ぜない
+- **migration は独自のテーブルだけを作る**: 本家のテーブルに列を足さない
 
 ## 未決事項
 
-1. 申請者への結果の連絡：承認・却下をアプリ内の通知で知らせるか。新しい通知の種類を足すと変更が増える
-2. 承認者への連絡：新しい申請が来たことを知らせるか。PR #5 で入れた Discord 通知の仕組みを使い回せそうである
+なし。
 
 決定済み：
+
+- 申請者への結果の連絡は、すしすきー内の通知（既存の `app` 型）で行う（2026-11-08）
+- 承認者への新しい申請の連絡は、Discord（システム Webhook）で行う（2026-11-08）
+- 本家の更新に追従しやすいよう、上の方針で作る（2026-11-08）
 
 - 申請できる人もロールポリシー（`canRequestEmojis`）で管理する（2026-11-07）
 - `canRequestEmojis` の既定値は `false`（2026-11-07）
