@@ -13436,4 +13436,208 @@ export interface Locale extends ILocale {
          */
         "mfm": string;
     };
+    "_sushiskiEmojiRequest": {
+        /**
+         * 絵文字の申請
+         */
+        "title": string;
+        /**
+         * 絵文字の申請の確認
+         */
+        "reviewTitle": string;
+        /**
+         * カスタム絵文字を申請できます。承認されると、サーバーの絵文字として登録されます。
+         */
+        "description": string;
+        /**
+         * 配布されている絵文字を入れてほしいときは、管理者が一括でインポートするので、相談してください。
+         */
+        "bundleNote": string;
+        /**
+         * この画像は自分で作ったものです。ほかのサーバーの絵文字や、ネットで拾った画像ではありません。
+         */
+        "agreeOwnWork": string;
+        /**
+         * 承認されると、サーバーの絵文字として誰でも使えるようになり、ほかのサーバーにも表示されます。名前やタグは、承認する人が直して登録することがあります。
+         */
+        "agreeUsage": string;
+        /**
+         * 例: インポート可、要クレジット表記
+         */
+        "licensePlaceholder": string;
+        /**
+         * ほかのサーバーがこの絵文字をインポートするときの扱い
+         */
+        "licenseCaption": string;
+        /**
+         * 表示のプレビュー
+         */
+        "previewTitle": string;
+        /**
+         * 文中ではこんな感じ {emoji} で表示されます
+         */
+        "previewText": ParameterizedString<"emoji">;
+        /**
+         * 絵文字を申請する権限がありません。これまでの申請の状態は「申請中」「採用・見送り」のタブで確認できます。
+         */
+        "notAllowed": string;
+        /**
+         * 承認する人へのメッセージ
+         */
+        "comment": string;
+        /**
+         * どんな場面で使いたいか、元ネタなど
+         */
+        "commentPlaceholder": string;
+        /**
+         * 承認する人へのメッセージを書いてください
+         */
+        "commentRequired": string;
+        /**
+         * 既存のカテゴリから選ぶか、新しく入力して Enter で決めます。
+         */
+        "categoryCaption": string;
+        /**
+         * 名前に使えるのは半角英数字と _ だけです
+         */
+        "nameInvalid": string;
+        /**
+         * 同じ名前の絵文字が既にあります
+         */
+        "nameTaken": string;
+        /**
+         * 名前は 128 文字までです
+         */
+        "nameTooLong": string;
+        /**
+         * 画像のサイズが完全な正方形ではありません
+         */
+        "notSquare": string;
+        /**
+         * 入力して Enter かスペースで追加します。× で消せます。
+         */
+        "tagsCaption": string;
+        /**
+         * 絵文字「{name}」を申請しました。承認されると通知でお知らせします。
+         */
+        "submittedDescription": ParameterizedString<"name">;
+        /**
+         * ノートする
+         */
+        "noteIt": string;
+        /**
+         * 絵文字「{name}」を申請しました！
+         */
+        "noteSubmittedText": ParameterizedString<"name">;
+        /**
+         * 申請する
+         */
+        "tabRequest": string;
+        /**
+         * 申請中
+         */
+        "tabPending": string;
+        /**
+         * 採用・見送り
+         */
+        "tabDone": string;
+        /**
+         * 私が申請した絵文字 :{name}: が承認されたよ！使ってみてね :{name}:
+         */
+        "noteApprovedText": ParameterizedString<"name" | "name">;
+        /**
+         * 申請する
+         */
+        "submit": string;
+        /**
+         * 申請しました
+         */
+        "submitted": string;
+        /**
+         * 申請はありません
+         */
+        "noRequests": string;
+        /**
+         * 申請を取り下げる
+         */
+        "cancelRequest": string;
+        /**
+         * この申請を取り下げますか？
+         */
+        "cancelConfirm": string;
+        /**
+         * 画像を選ぶ
+         */
+        "selectImage": string;
+        /**
+         * 画像を選んでください
+         */
+        "imageRequired": string;
+        /**
+         * 承認する
+         */
+        "approve": string;
+        /**
+         * この内容で絵文字を登録しますか？
+         */
+        "approveConfirm": string;
+        /**
+         * 見送る
+         */
+        "reject": string;
+        /**
+         * 見送る理由（任意）
+         */
+        "rejectReason": string;
+        /**
+         * 申請者の申請ページに表示されます
+         */
+        "rejectReasonDescription": string;
+        /**
+         * 申請者
+         */
+        "requestedBy": string;
+        /**
+         * 見送りの理由
+         */
+        "rejectedReason": string;
+        /**
+         * 見送りを取り消す
+         */
+        "unreject": string;
+        /**
+         * 見送りを取り消して、確認待ちに戻しますか？
+         */
+        "unrejectConfirm": string;
+        /**
+         * 絵文字の申請があったとき
+         */
+        "webhookEvent": string;
+        /**
+         * 絵文字の申請
+         */
+        "canRequestEmojis": string;
+        /**
+         * 絵文字の申請の承認
+         */
+        "canApproveEmojiRequests": string;
+        "_status": {
+            /**
+             * 確認待ち
+             */
+            "pending": string;
+            /**
+             * 承認済み
+             */
+            "approved": string;
+            /**
+             * 見送り
+             */
+            "rejected": string;
+            /**
+             * 取り下げ
+             */
+            "canceled": string;
+        };
+    };
 }

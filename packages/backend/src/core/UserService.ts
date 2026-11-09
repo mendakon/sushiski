@@ -61,8 +61,8 @@ export class UserService {
 	 * @see SystemWebhookService.enqueueSystemWebhook
 	 */
 	@bindThis
-	public async notifySystemWebhook(user: MiUser, type: 'userCreated') {
+	public async notifySystemWebhook(user: MiUser, type: 'userCreated', opts: { email: string | null }) {
 		const packedUser = await this.userEntityService.pack(user, null, { schema: 'UserLite' });
-		return this.systemWebhookService.enqueueSystemWebhook(type, packedUser);
+		return this.systemWebhookService.enqueueSystemWebhook(type, { ...packedUser, email: opts.email });
 	}
 }

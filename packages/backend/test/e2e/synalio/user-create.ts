@@ -95,6 +95,8 @@ describe('[シナリオ] ユーザ作成', () => {
 			expect(alice.emojis).toEqual(body.emojis);
 			expect(alice.onlineStatus).toBe(body.onlineStatus);
 			expect(alice.badgeRoles).toEqual(body.badgeRoles);
+			// メールアドレスなしで登録したので null
+			expect((webhookBody.body as { email?: string | null }).email).toBeNull();
 		});
 
 		test('ユーザ作成 -> userCreatedが未許可の場合は送出されない', async () => {

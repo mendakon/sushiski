@@ -137,6 +137,12 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		to: '/admin/avatar-decorations',
 		active: currentPage.value?.route.name === 'avatarDecorations',
 	}, {
+		// sushi.ski: 絵文字申請
+		icon: 'ti ti-icons',
+		text: i18n.ts._sushiskiEmojiRequest.reviewTitle,
+		to: '/admin/emoji-requests',
+		active: currentPage.value?.route.name === 'emojiRequests',
+	}, {
 		icon: 'ti ti-whirl',
 		text: i18n.ts.federation,
 		to: '/admin/federation',

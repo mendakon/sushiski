@@ -397,6 +397,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkSwitch>
 			</template>
 		</XFolder>
+
+		<!-- sushi.ski: 絵文字申請 -->
+		<XFolder v-if="matchQuery([i18n.ts._sushiskiEmojiRequest.canRequestEmojis, 'canRequestEmojis'])" v-model:policyMeta="policyMetaModel.canRequestEmojis" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._sushiskiEmojiRequest.canRequestEmojis }}</template>
+			<template #valueText>{{ valuesModel.canRequestEmojis ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canRequestEmojis" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._sushiskiEmojiRequest.canApproveEmojiRequests, 'canApproveEmojiRequests'])" v-model:policyMeta="policyMetaModel.canApproveEmojiRequests" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._sushiskiEmojiRequest.canApproveEmojiRequests }}</template>
+			<template #valueText>{{ valuesModel.canApproveEmojiRequests ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canApproveEmojiRequests" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
 	</div>
 </template>
 

@@ -75,6 +75,8 @@ import { packedChatRoomInvitationSchema } from '@/models/json-schema/chat-room-i
 import { packedChatRoomMembershipSchema } from '@/models/json-schema/chat-room-membership.js';
 import { packedAchievementNameSchema, packedAchievementSchema } from '@/models/json-schema/achievement.js';
 import { packedNoteDraftSchema } from '@/models/json-schema/note-draft.js';
+// sushi.ski: 絵文字申請
+import { packedEmojiRequestSchema } from '@/models/json-schema/emoji-request.js';
 
 export const refs = {
 	UserLite: packedUserLiteSchema,
@@ -147,6 +149,8 @@ export const refs = {
 	ChatRoom: packedChatRoomSchema,
 	ChatRoomInvitation: packedChatRoomInvitationSchema,
 	ChatRoomMembership: packedChatRoomMembershipSchema,
+	// sushi.ski: 絵文字申請
+	SushiskiEmojiRequest: packedEmojiRequestSchema,
 };
 
 export type Packed<x extends keyof typeof refs> = SchemaType<typeof refs[x]>;

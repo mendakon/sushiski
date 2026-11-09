@@ -20,6 +20,8 @@ export const systemWebhookEventTypes = [
 	'inactiveModeratorsInvitationOnlyChanged',
 	// 捨てアド等のメールアドレスが判定に該当したとき
 	'emailBlocked',
+	// sushi.ski: 絵文字の申請があったとき
+	'emojiRequestCreated',
 ] as const;
 export type SystemWebhookEventType = typeof systemWebhookEventTypes[number];
 

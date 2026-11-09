@@ -307,7 +307,7 @@ export class WebhookTestService {
 				break;
 			}
 			case 'userCreated': {
-				send('userCreated', await this.toPackedUserLite(dummyUser1));
+				send('userCreated', { ...await this.toPackedUserLite(dummyUser1), email: 'dummy@example.com' });
 				break;
 			}
 			case 'inactiveModeratorsWarning': {
@@ -334,6 +334,17 @@ export class WebhookTestService {
 					source: 'mx',
 					matched: 'mx.example.com',
 					enforced: true,
+				});
+				break;
+			}
+			// sushi.ski: 絵文字申請
+			case 'emojiRequestCreated': {
+				send('emojiRequestCreated', {
+					requestId: 'dummy-emoji-request-1',
+					name: 'sushi',
+					comment: 'テスト用の申請です',
+					user: { id: 'dummy-user-1', username: 'alice', host: null },
+					fileUrl: null,
 				});
 				break;
 			}

@@ -7,7 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { IsNull, LessThanOrEqual } from 'typeorm';
 import { DI } from '@/di-symbols.js';
-import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, MiRegistrationTicket, MiMeta } from '@/models/_.js';
+import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UsersRepository, MiRegistrationTicket, MiMeta } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { IdService } from '@/core/IdService.js';
@@ -35,9 +35,6 @@ export class SignupApiService {
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
-
-		@Inject(DI.userProfilesRepository)
-		private userProfilesRepository: UserProfilesRepository,
 
 		@Inject(DI.userPendingsRepository)
 		private userPendingsRepository: UserPendingsRepository,
@@ -350,18 +347,11 @@ export class SignupApiService {
 			const { account } = await this.signupService.signup({
 				username: pendingUser.username,
 				passwordHash: pendingUser.password,
+				verifiedEmail: pendingUser.email,
 			});
 
 			this.userPendingsRepository.delete({
 				id: pendingUser.id,
-			});
-
-			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: account.id });
-
-			await this.userProfilesRepository.update({ userId: profile.userId }, {
-				email: pendingUser.email,
-				emailVerified: true,
-				emailVerifyCode: null,
 			});
 
 			const ticket = await this.registrationTicketsRepository.findOneBy({ pendingUserId: pendingUser.id });

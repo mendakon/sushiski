@@ -329,6 +329,15 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		// sushi.ski: 絵文字申請
+		canRequestEmojis: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canApproveEmojiRequests: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 	},
 } as const;
 

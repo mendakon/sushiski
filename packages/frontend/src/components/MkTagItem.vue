@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="$style.root" @click="(ev) => emit('click', ev)">
 	<span v-if="iconClass" :class="[$style.icon, iconClass]"></span>
 	<span>{{ content }}</span>
-	<MkButton v-if="exButtonIconClass" :class="$style.exButton" @click="(ev) => emit('exButtonClick', ev)">
+	<MkButton v-if="exButtonIconClass" :class="$style.exButton" :aria-label="exButtonLabel" @click="(ev) => emit('exButtonClick', ev)">
 		<span :class="[$style.exButtonIcon, exButtonIconClass]"></span>
 	</MkButton>
 </div>
@@ -25,6 +25,8 @@ defineProps<{
 	iconClass?: string;
 	content: string;
 	exButtonIconClass?: string
+	// sushi.ski: アイコンだけのボタンに読み上げ用の名前を付けられるようにする
+	exButtonLabel?: string
 }>();
 </script>
 
