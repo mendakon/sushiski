@@ -232,6 +232,9 @@ export const rolePolicies = [
 	'noteDraftLimit',
 	'scheduledNoteLimit',
 	'watermarkAvailable',
+	// sushi.ski: 絵文字申請
+	'canRequestEmojis',
+	'canApproveEmojiRequests',
 ] as const;
 
 export const queueTypes = [

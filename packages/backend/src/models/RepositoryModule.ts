@@ -59,6 +59,7 @@ import {
 	miRepository,
 	MiRetentionAggregation,
 	MiReversiGame,
+	MiEmojiRequest, // sushi.ski: 絵文字申請
 	MiRole,
 	MiRoleAssignment,
 	MiSignin,
@@ -544,6 +545,13 @@ const $reversiGamesRepository: Provider = {
 	inject: [DI.db],
 };
 
+// sushi.ski: 絵文字申請
+const $emojiRequestsRepository: Provider = {
+	provide: DI.emojiRequestsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiEmojiRequest).extend(miRepository as MiRepository<MiEmojiRequest>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -623,6 +631,7 @@ const $reversiGamesRepository: Provider = {
 		$chatApprovalsRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
+		$emojiRequestsRepository, // sushi.ski: 絵文字申請
 	],
 	exports: [
 		$usersRepository,
@@ -701,6 +710,7 @@ const $reversiGamesRepository: Provider = {
 		$chatApprovalsRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
+		$emojiRequestsRepository, // sushi.ski: 絵文字申請
 	],
 })
 export class RepositoryModule {

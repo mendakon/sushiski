@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import type { EmailBlockedPayload, SystemWebhookPayload } from '@/core/SystemWebhookService.js';
+import type { EmailBlockedPayload, EmojiRequestCreatedPayload, SystemWebhookPayload } from '@/core/SystemWebhookService.js';
 import type { SystemWebhookEventType } from '@/models/SystemWebhook.js';
 
 const DISCORD_HOSTS = ['discord.com', 'discordapp.com', 'ptb.discord.com', 'canary.discord.com'];
@@ -98,6 +98,22 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
 					`メール: ${maskedEmail}`,
 					`判定: ${matched != null ? `${label}（${matched}）` : label}`,
 					`経路: ${EMAIL_BLOCK_VIA_LABELS[via]}`,
+					'',
+				].join('\n'),
+			};
+		}
+		// sushi.ski: 絵文字申請
+		case 'emojiRequestCreated': {
+			const { name, comment, user, fileUrl } = content as EmojiRequestCreatedPayload;
+			return {
+				username: '絵文字申請',
+				content: [
+					'絵文字の申請がありました。',
+					`server: <${server}>`,
+					`name: :${name}:`,
+					`from: ${acct(user, user.id)}`,
+					...(comment != null && comment !== '' ? [`comment: ${comment}`] : []),
+					...(fileUrl != null ? [`image: <${fileUrl}>`] : []),
 					'',
 				].join('\n'),
 			};

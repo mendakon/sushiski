@@ -47,6 +47,16 @@ function toolsMenuItems(): MenuItem[] {
 		});
 	}
 
+	// sushi.ski: 絵文字申請: モデレーターでない承認者は /admin を開けないので、ここから確認ページへ行けるようにする
+	if ($i && ($i.isModerator || $i.isAdmin || $i.policies.canApproveEmojiRequests)) {
+		items.push({
+			type: 'link',
+			to: '/emoji-requests/review',
+			text: i18n.ts._sushiskiEmojiRequest.reviewTitle,
+			icon: 'ti ti-icons',
+		});
+	}
+
 	return items;
 }
 
