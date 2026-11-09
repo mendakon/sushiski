@@ -10,6 +10,26 @@
 
 ---
 
+## ブランチ運用 (sushiski)
+
+sushiski は misskey-dev/misskey の fork で、本家とはブランチの使い方が違う。
+
+- `master`: 本番かつ開発の本流 (GitHub の既定ブランチ)。作業は `feat/…` / `fix/…` / `ci/…` / `docs/…` 等を master から切り、PR で master へ入れる
+- 本番反映中のコミットは `prod-YYYY-MM-DD` タグで示す。本番に出したら新しいタグを付ける (`git log <最新の prod タグ>..master` が未反映分)
+- `deploy` / `develop` / `staging` / 本家由来のブランチ: 使っていない。残しているだけなので、作業の起点や PR の宛先にしない
+- PR は `mendakon/sushiski` の master 宛て。fork なので本家 misskey-dev へ出さない
+
+### バージョン
+
+バージョンは「本家のバージョン + `+sushi.` + すしすきー独自のバージョン」で表す (例: `2026.10.0+sushi.1.0.0`)。
+
+- 本家のバージョンは `package.json` の `version`。本家の取り込み以外では触らない (取り込み時の衝突を避けるため)
+- 独自のバージョンは `sushiski.json` の `version` (semver)。独自機能を足したら minor、修正だけなら patch を上げる
+- `scripts/build-pre.mjs` / `packages/frontend/vite.config.ts` / `packages/frontend-embed/vite.config.ts` / `packages/sw/build.js` で連結する
+- `+` 以降は semver のビルドメタデータなので、他サーバーからの比較では本家の同じバージョンとして扱われる。その代わり、独自のバージョンだけが上がったときはクライアントの「更新されました」表示が出ない
+
+---
+
 ## 絶対にやってはいけない事
 
 違反すると CI 失敗 / 本番事故 / 共有環境破壊 になる。順守すること。

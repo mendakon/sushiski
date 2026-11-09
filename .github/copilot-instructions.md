@@ -44,6 +44,7 @@
 - マージ済 / プッシュ済コミットを `git commit --amend` で書き換えない
 - 他人のブランチを `git reset --hard` / `git branch -D` で破壊しない
 - `git config` をユーザーに無断で書き換えない (特に `user.name` / `user.email` / `commit.gpgsign`)
+- PR の宛先は `mendakon/sushiski` の `master` (本番かつ本流)。`deploy` / `develop` / `staging` は未使用で、宛先にしない (詳細は AGENTS.md の「ブランチ運用」)
 
 ### Issue / PR / 外部送信
 
