@@ -55,8 +55,11 @@ export class SignupService {
 		passwordHash?: MiUserProfile['password'] | null;
 		host?: string | null;
 		ignorePreservedUsernames?: boolean;
+		/** 確認済みのメールアドレス。プロフィールに保存し、新規登録の通知にも載せる */
+		verifiedEmail?: string | null;
 	}) {
 		const { username, password, passwordHash, host } = opts;
+		const verifiedEmail = opts.verifiedEmail ?? null;
 		let hash = passwordHash;
 
 		// Validate username
@@ -146,6 +149,7 @@ export class SignupService {
 				userId: account.id,
 				autoAcceptFollowed: true,
 				password: hash,
+				...(verifiedEmail != null ? { email: verifiedEmail, emailVerified: true } : {}),
 			}));
 
 			await transactionalEntityManager.save(new MiUsedUsername({
@@ -155,7 +159,7 @@ export class SignupService {
 		});
 
 		this.usersChart.update(account, true);
-		this.userService.notifySystemWebhook(account, 'userCreated');
+		this.userService.notifySystemWebhook(account, 'userCreated', { email: verifiedEmail });
 
 		if (this.meta.rootUserId == null) {
 			await this.metaService.update({ rootUserId: account.id });

@@ -53,6 +53,11 @@ export type EmailBlockedPayload = {
 	enforced: boolean;
 };
 
+// sushiski: 管理者が登録者を確認できるよう、登録時のメールアドレス (未設定なら null) を添える
+export type UserCreatedPayload = Packed<'UserLite'> & {
+	email: string | null;
+};
+
 // sushi.ski: 絵文字申請
 export type EmojiRequestCreatedPayload = {
 	requestId: string;
@@ -65,7 +70,7 @@ export type EmojiRequestCreatedPayload = {
 
 export type SystemWebhookPayload<T extends SystemWebhookEventType> =
 	T extends 'abuseReport' | 'abuseReportResolved' ? AbuseReportPayload :
-	T extends 'userCreated' ? Packed<'UserLite'> :
+	T extends 'userCreated' ? UserCreatedPayload :
 	T extends 'inactiveModeratorsWarning' ? InactiveModeratorsWarningPayload :
 	T extends 'inactiveModeratorsInvitationOnlyChanged' ? Record<string, never> :
 	T extends 'emailBlocked' ? EmailBlockedPayload :

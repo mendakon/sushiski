@@ -45,9 +45,87 @@ describe('buildDiscordWebhookBody', () => {
 		expect(body.content).not.toMatch(/[\uD800-\uDBFF]…$/);
 	});
 
-	test('通報対象はユーザー名で表示する', () => {
-		const body = buildDiscordWebhookBody('abuseReport', { targetUser: { username: 'bob', host: 'remote.example' }, targetUserId: 'id1', comment: 'x' }, SERVER);
-		expect(body.content).toContain('name: @bob@remote.example');
+	test('通報は対象・通報者・内容・確認先を載せる', () => {
+		const body = buildDiscordWebhookBody('abuseReport', {
+			targetUser: { username: 'bob', host: 'remote.example' },
+			targetUserId: 'id1',
+			reporter: { username: 'alice', host: null },
+			reporterId: 'id2',
+			comment: '絵の無断転載\nhttps://example.com/notes/abc',
+		}, SERVER);
+		expect(body.content).toBe([
+			'🧌 新しい通報があります。',
+			`対象: @bob@remote.example  <${SERVER}/@bob@remote.example>`,
+			`通報者: @alice  <${SERVER}/@alice>`,
+			'内容:',
+			'> 絵の無断転載',
+			'> https://example.com/notes/abc',
+			`確認: <${SERVER}/admin/abuses>`,
+			'',
+		].join('\n'));
+	});
+
+	test('通報の処理は結果・処理者・ノートを載せる', () => {
+		const base = {
+			targetUser: { username: 'bob', host: null },
+			targetUserId: 'id1',
+			reporter: null,
+			reporterId: 'id2',
+			assignee: { username: 'mod', host: null },
+			assigneeId: 'id3',
+			forwarded: true,
+			moderationNote: '凍結しました',
+			comment: '',
+		};
+		const accepted = buildDiscordWebhookBody('abuseReportResolved', { ...base, resolvedAs: 'accept' }, SERVER).content;
+		expect(accepted).toBe([
+			'🪓 通報が処理されました。（是認）',
+			'結果: 是認（通報の内容を認めて対応した）',
+			`対象: @bob  <${SERVER}/@bob>`,
+			'通報者: id2',
+			`処理者: @mod  <${SERVER}/@mod>`,
+			'転送: 相手のサーバーに転送済み',
+			'モデレーションノート:',
+			'> 凍結しました',
+			'内容:',
+			'> （なし）',
+			'',
+		].join('\n'));
+
+		const rejected = buildDiscordWebhookBody('abuseReportResolved', { ...base, resolvedAs: 'reject', assigneeId: null, assignee: null, forwarded: false, moderationNote: '' }, SERVER).content;
+		expect(rejected.startsWith('🫠 通報が処理されました。（否認）')).toBe(true);
+		expect(rejected).toContain('結果: 否認（問題なしと判断した）');
+		expect(rejected).not.toContain('処理者');
+		expect(rejected).not.toContain('転送');
+		expect(rejected).not.toContain('モデレーションノート');
+	});
+
+	test('リンクプレビューを出さず、サーバーの行も付けない', () => {
+		for (const [type, content] of [
+			['userCreated', { username: 'alice', email: null }],
+			['abuseReport', { targetUser: null, targetUserId: 'id1', reporter: null, reporterId: 'id2', comment: 'x' }],
+			['inactiveModeratorsInvitationOnlyChanged', {}],
+		] as const) {
+			const body = buildDiscordWebhookBody(type, content, SERVER);
+			expect(body.flags).toBe(4);
+			expect(body.content).not.toContain('server:');
+		}
+	});
+
+	test('新規登録はメールアドレスとユーザーページのURLを載せる', () => {
+		const body = buildDiscordWebhookBody('userCreated', { username: 'alice_1', email: 'a_b*c@example.com' }, SERVER);
+		expect(body.content).toBe([
+			'🦑 新規ユーザー登録がありました。',
+			'name: alice\\_1',
+			'mail: a\\_b\\*c@example.com',
+			`url: <${SERVER}/@alice_1>`,
+			'',
+		].join('\n'));
+	});
+
+	test('メールアドレスがない新規登録は（なし）と表示する', () => {
+		const body = buildDiscordWebhookBody('userCreated', { username: 'alice', email: null }, SERVER);
+		expect(body.content).toContain('mail: （なし）');
 	});
 
 	test('モデレーター不在の通知も本文になる', () => {
@@ -68,14 +146,24 @@ describe('buildDiscordWebhookBody', () => {
 	});
 
 	// sushi.ski: 絵文字申請
-	test('絵文字申請は名前と申請者を表示し、ひとことが無ければ省く', () => {
-		const content = { requestId: 'r', name: 'sushi', user: { id: 'u', username: 'alice', host: null }, fileUrl: 'https://media.example/sushi.png' };
-		const withComment = buildDiscordWebhookBody('emojiRequestCreated', { ...content, comment: 'よろしく' }, SERVER).content;
-		expect(withComment).toContain('name: :sushi:');
-		expect(withComment).toContain('from: @alice');
-		expect(withComment).toContain('comment: よろしく');
-		expect(withComment).toContain('image: <https://media.example/sushi.png>');
-		expect(buildDiscordWebhookBody('emojiRequestCreated', { ...content, comment: null }, SERVER).content).not.toContain('comment:');
+	test('絵文字申請は名前・申請者・メッセージ・確認ページを載せ、画像だけプレビューを出す', () => {
+		const content = { requestId: 'r', name: 'sushi_roll', user: { id: 'u', username: 'alice', host: null }, fileUrl: 'https://media.example/sushi.png' };
+		const body = buildDiscordWebhookBody('emojiRequestCreated', { ...content, comment: 'よろしく' }, SERVER);
+		expect(body.content).toBe([
+			'🍣 絵文字の申請がありました。',
+			'名前: :sushi\\_roll:',
+			`申請者: @alice  <${SERVER}/@alice>`,
+			'メッセージ:',
+			'> よろしく',
+			`確認: <${SERVER}/emoji-requests/review>`,
+			'https://media.example/sushi.png',
+			'',
+		].join('\n'));
+		expect(body.flags).toBe(0);
+
+		const noImage = buildDiscordWebhookBody('emojiRequestCreated', { ...content, comment: null, fileUrl: null }, SERVER);
+		expect(noImage.content).toContain('> （なし）');
+		expect(noImage.flags).toBe(4);
 	});
 });
 
@@ -88,7 +176,7 @@ describe('SystemWebhookDeliverProcessorService', () => {
 			{ send } as never,
 			{ logger: { createSubLogger: () => ({ debug: vi.fn(), error: vi.fn() }) } } as never,
 		);
-		const job = { data: { to, type: 'userCreated', content: { username: 'alice' }, webhookId: 'w', secret: 'shh', eventId: 'e', createdAt: 0 } };
+		const job = { data: { to, type: 'userCreated', content: { username: 'alice', email: null }, webhookId: 'w', secret: 'shh', eventId: 'e', createdAt: 0 } };
 		return processor.process(job as never).then(() => send.mock.calls[0][1]);
 	}
 
@@ -109,7 +197,7 @@ describe('SystemWebhookDeliverProcessorService', () => {
 				'X-Misskey-Hook-Secret': 'shh',
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({ server: SERVER, hookId: 'w', eventId: 'e', createdAt: 0, type: 'userCreated', body: { username: 'alice' } }),
+			body: JSON.stringify({ server: SERVER, hookId: 'w', eventId: 'e', createdAt: 0, type: 'userCreated', body: { username: 'alice', email: null } }),
 		});
 	});
 });
