@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="$style.head">
 		<MkAvatar v-if="['pollEnded', 'note'].includes(notification.type) && 'note' in notification" :class="$style.icon" :user="notification.note.user" link preview/>
 		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
+		<MkAvatar v-else-if="isSushiskiEmojiRequest" :class="$style.icon" :user="$i" link preview/>
 		<div v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'" :class="[$style.icon, $style.icon_reactionGroupHeart]"><i class="ti ti-heart" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'reaction:grouped'" :class="[$style.icon, $style.icon_reactionGroup]"><i class="ti ti-plus" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'renote:grouped'" :class="[$style.icon, $style.icon_renoteGroup]"><i class="ti ti-repeat" style="line-height: 1;"></i></div>
@@ -31,6 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_createToken]: notification.type === 'createToken',
 				[$style.t_chatRoomInvitationReceived]: notification.type === 'chatRoomInvitationReceived',
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
+				[$style.t_sushiskiEmojiRequest]: isSushiskiEmojiRequest,
 			}]"
 		>
 			<i v-if="notification.type === 'follow'" class="ti ti-plus"></i>
@@ -48,6 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'login'" class="ti ti-login-2"></i>
 			<i v-else-if="notification.type === 'createToken'" class="ti ti-key"></i>
 			<i v-else-if="notification.type === 'chatRoomInvitationReceived'" class="ti ti-messages"></i>
+			<i v-else-if="isSushiskiEmojiRequest" class="ti ti-icons"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
@@ -148,6 +151,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</template>
 			<span v-else-if="notification.type === 'test'" :class="$style.text">{{ i18n.ts._notification.notificationWillBeDisplayedLikeThis }}</span>
+			<MkA v-else-if="notification.type === 'app' && isSushiskiEmojiRequest" :class="$style.text" :to="sushiskiEmojiRequestLink">
+				<!-- リンクの中にリンクができないよう、本文は plain で表示する (絵文字は表示される) -->
+				<Mfm :text="notification.body" :plain="true" :nowrap="false"/>
+			</MkA>
 			<span v-else-if="notification.type === 'app'" :class="$style.text">
 				<Mfm :text="notification.body" :nowrap="false"/>
 			</span>
@@ -176,7 +183,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
@@ -198,6 +205,13 @@ const props = withDefaults(defineProps<{
 	withTime: false,
 	full: false,
 	contentVisibilityAuto: true,
+});
+
+// sushi.ski: 絵文字申請の通知 (アプリ通知) は、実績の解除などと同じく自分のアバターを出し、押すと申請ページのその申請を開く
+const isSushiskiEmojiRequest = computed(() => props.notification.type === 'app' && props.notification.header === '絵文字申請' && props.notification.icon == null);
+const sushiskiEmojiRequestLink = computed(() => {
+	const name = props.notification.type === 'app' ? props.notification.body.match(/:([a-zA-Z0-9_]+):/)?.[1] : null;
+	return name != null ? `/emoji-requests?emoji=${name}` : '/emoji-requests';
 });
 
 type ExportCompletedNotification = Misskey.entities.Notification & { type: 'exportCompleted' };
@@ -365,6 +379,12 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 }
 
 .t_achievementEarned {
+	background: var(--eventAchievement);
+	pointer-events: none;
+}
+
+// sushi.ski: 絵文字申請の通知
+.t_sushiskiEmojiRequest {
 	background: var(--eventAchievement);
 	pointer-events: none;
 }

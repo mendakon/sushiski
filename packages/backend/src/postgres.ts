@@ -85,6 +85,8 @@ import { MiChatRoomMembership } from '@/models/ChatRoomMembership.js';
 import { MiChatRoomInvitation } from '@/models/ChatRoomInvitation.js';
 import { MiBubbleGameRecord } from '@/models/BubbleGameRecord.js';
 import { MiReversiGame } from '@/models/ReversiGame.js';
+// sushi.ski: 絵文字申請
+import { MiEmojiRequest } from '@/models/EmojiRequest.js';
 import { MiChatApproval } from '@/models/ChatApproval.js';
 import { MiSystemAccount } from '@/models/SystemAccount.js';
 
@@ -254,6 +256,8 @@ export const entities = [
 	MiChatApproval,
 	MiBubbleGameRecord,
 	MiReversiGame,
+	// sushi.ski: 絵文字申請
+	MiEmojiRequest,
 	...charts,
 ];
 

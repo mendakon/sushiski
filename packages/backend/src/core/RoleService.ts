@@ -73,6 +73,9 @@ export type RolePolicies = {
 	noteDraftLimit: number;
 	scheduledNoteLimit: number;
 	watermarkAvailable: boolean;
+	// sushi.ski: 絵文字申請
+	canRequestEmojis: boolean;
+	canApproveEmojiRequests: boolean;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -121,6 +124,9 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	noteDraftLimit: 10,
 	scheduledNoteLimit: 1,
 	watermarkAvailable: true,
+	// sushi.ski: 絵文字申請
+	canRequestEmojis: false,
+	canApproveEmojiRequests: false,
 };
 
 @Injectable()
@@ -452,6 +458,9 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			noteDraftLimit: calc('noteDraftLimit', vs => Math.max(...vs)),
 			scheduledNoteLimit: calc('scheduledNoteLimit', vs => Math.max(...vs)),
 			watermarkAvailable: calc('watermarkAvailable', vs => vs.some(v => v === true)),
+			// sushi.ski: 絵文字申請
+			canRequestEmojis: calc('canRequestEmojis', vs => vs.some(v => v === true)),
+			canApproveEmojiRequests: calc('canApproveEmojiRequests', vs => vs.some(v => v === true)),
 		};
 	}
 

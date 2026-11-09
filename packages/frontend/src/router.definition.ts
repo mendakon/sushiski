@@ -361,6 +361,19 @@ export const ROUTE_DEF = [{
 	name: 'avatarDecorations',
 	component: page(() => import('@/pages/avatar-decorations.vue')),
 }, {
+	// sushi.ski: 絵文字申請
+	path: '/emoji-requests/review',
+	component: page(() => import('@/pages/emoji-requests.review.vue')),
+	loginRequired: true,
+}, {
+	path: '/emoji-requests',
+	component: page(() => import('@/pages/emoji-requests.vue')),
+	loginRequired: true,
+	// sushi.ski: 承認の通知から開いたとき、その申請までスクロールする
+	query: {
+		emoji: 'focusEmojiName',
+	},
+}, {
 	path: '/registry/keys/:domain/:path(*)?',
 	component: page(() => import('@/pages/registry.keys.vue')),
 }, {
@@ -406,6 +419,11 @@ export const ROUTE_DEF = [{
 		path: '/avatar-decorations',
 		name: 'avatarDecorations',
 		component: page(() => import('@/pages/avatar-decorations.vue')),
+	}, {
+		// sushi.ski: 絵文字申請
+		path: '/emoji-requests',
+		name: 'emojiRequests',
+		component: page(() => import('@/pages/emoji-requests.review.vue')),
 	}, {
 		path: '/federation-job-queue',
 		name: 'federationJobQueue',

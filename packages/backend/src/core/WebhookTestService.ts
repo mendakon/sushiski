@@ -337,6 +337,17 @@ export class WebhookTestService {
 				});
 				break;
 			}
+			// sushi.ski: 絵文字申請
+			case 'emojiRequestCreated': {
+				send('emojiRequestCreated', {
+					requestId: 'dummy-emoji-request-1',
+					name: 'sushi',
+					comment: 'テスト用の申請です',
+					user: { id: 'dummy-user-1', username: 'alice', host: null },
+					fileUrl: null,
+				});
+				break;
+			}
 			default: {
 				const _exhaustiveAssertion: never = params.type;
 				return;

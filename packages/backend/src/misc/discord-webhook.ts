@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import type { AbuseReportPayload, EmailBlockedPayload, SystemWebhookPayload } from '@/core/SystemWebhookService.js';
+import type { AbuseReportPayload, EmailBlockedPayload, EmojiRequestCreatedPayload, SystemWebhookPayload } from '@/core/SystemWebhookService.js';
 import type { SystemWebhookEventType } from '@/models/SystemWebhook.js';
 
 const DISCORD_HOSTS = ['discord.com', 'discordapp.com', 'ptb.discord.com', 'canary.discord.com'];
@@ -95,7 +95,12 @@ const ABUSE_REPORT_RESOLVED_LABELS: Record<NonNullable<AbuseReportPayload['resol
 	unknown: '解決済み',
 };
 
-function render(type: SystemWebhookEventType, content: unknown, server: string): Omit<DiscordWebhookBody, 'allowed_mentions' | 'flags'> {
+type RenderedBody = Omit<DiscordWebhookBody, 'allowed_mentions' | 'flags'> & {
+	/** true なら、本文中で <> に囲んでいない URL にリンクプレビューを付ける */
+	preview?: boolean;
+};
+
+function render(type: SystemWebhookEventType, content: unknown, server: string): RenderedBody {
 	switch (type) {
 		case 'userCreated': {
 			const user = content as SystemWebhookPayload<'userCreated'>;
@@ -167,6 +172,25 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
 				].join('\n'),
 			};
 		}
+		// sushi.ski: 絵文字申請
+		case 'emojiRequestCreated': {
+			const { name, comment, user, fileUrl } = content as EmojiRequestCreatedPayload;
+			return {
+				username: '絵文字申請',
+				content: [
+					'🍣 絵文字の申請がありました。',
+					`名前: :${escapeMarkdown(name)}:`,
+					userLine('申請者', user, user.id, server),
+					'メッセージ:',
+					quote(comment ?? ''),
+					`確認: <${server}/emoji-requests/review>`,
+					// 承認する人が画像を見られるよう、画像の URL だけは <> で囲まずプレビューを出す
+					...(fileUrl != null ? [fileUrl] : []),
+					'',
+				].join('\n'),
+				preview: fileUrl != null,
+			};
+		}
 		default: {
 			const _exhaustiveAssertion: never = type;
 			return { content: `${String(type)}\n` };
@@ -180,6 +204,6 @@ function render(type: SystemWebhookEventType, content: unknown, server: string):
  * 通報文中のノートのURLなどにサイト全体の紹介カードが付いて場所を取るので、リンクプレビューも出さない
  */
 export function buildDiscordWebhookBody(type: SystemWebhookEventType, content: unknown, server: string): DiscordWebhookBody {
-	const body = render(type, content, server);
-	return { ...body, content: truncate(body.content), allowed_mentions: { parse: [] }, flags: DISCORD_FLAG_SUPPRESS_EMBEDS };
+	const { preview, ...body } = render(type, content, server);
+	return { ...body, content: truncate(body.content), allowed_mentions: { parse: [] }, flags: preview ? 0 : DISCORD_FLAG_SUPPRESS_EMBEDS };
 }

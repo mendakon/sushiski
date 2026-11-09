@@ -144,6 +144,27 @@ describe('buildDiscordWebhookBody', () => {
 		expect(blocked).toContain('経路: 新規登録');
 		expect(buildDiscordWebhookBody('emailBlocked', { ...content, enforced: false }, SERVER).content).toContain('記録のみ');
 	});
+
+	// sushi.ski: 絵文字申請
+	test('絵文字申請は名前・申請者・メッセージ・確認ページを載せ、画像だけプレビューを出す', () => {
+		const content = { requestId: 'r', name: 'sushi_roll', user: { id: 'u', username: 'alice', host: null }, fileUrl: 'https://media.example/sushi.png' };
+		const body = buildDiscordWebhookBody('emojiRequestCreated', { ...content, comment: 'よろしく' }, SERVER);
+		expect(body.content).toBe([
+			'🍣 絵文字の申請がありました。',
+			'名前: :sushi\\_roll:',
+			`申請者: @alice  <${SERVER}/@alice>`,
+			'メッセージ:',
+			'> よろしく',
+			`確認: <${SERVER}/emoji-requests/review>`,
+			'https://media.example/sushi.png',
+			'',
+		].join('\n'));
+		expect(body.flags).toBe(0);
+
+		const noImage = buildDiscordWebhookBody('emojiRequestCreated', { ...content, comment: null, fileUrl: null }, SERVER);
+		expect(noImage.content).toContain('> （なし）');
+		expect(noImage.flags).toBe(4);
+	});
 });
 
 describe('SystemWebhookDeliverProcessorService', () => {

@@ -155,6 +155,8 @@ import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
 import { TelemetryService } from './telemetry/TelemetryService.js';
+// sushi.ski: 絵文字申請
+import { EmojiRequestService } from './EmojiRequestService.js';
 import type { Provider } from '@nestjs/common';
 
 //#region 文字列ベースでのinjection用(循環参照対応のため)
@@ -306,6 +308,9 @@ const $ApNoteService: Provider = { provide: 'ApNoteService', useExisting: ApNote
 const $ApPersonService: Provider = { provide: 'ApPersonService', useExisting: ApPersonService };
 const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting: ApQuestionService };
 //#endregion
+
+// sushi.ski: 絵文字申請
+const $EmojiRequestService: Provider = { provide: 'EmojiRequestService', useExisting: EmojiRequestService };
 
 @Module({
 	imports: [
@@ -611,6 +616,10 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ApQuestionService,
 		$TelemetryService,
 		//#endregion
+
+		// sushi.ski: 絵文字申請
+		EmojiRequestService,
+		$EmojiRequestService,
 	],
 	exports: [
 		QueueModule,
@@ -910,6 +919,10 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ApQuestionService,
 		$TelemetryService,
 		//#endregion
+
+		// sushi.ski: 絵文字申請
+		EmojiRequestService,
+		$EmojiRequestService,
 	],
 })
 export class CoreModule { }
