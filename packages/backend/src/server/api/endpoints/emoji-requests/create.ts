@@ -24,6 +24,11 @@ export const meta = {
 	},
 
 	errors: {
+		busy: {
+			message: 'Another operation on the same emoji name is in progress. Please try again.',
+			code: 'TRY_AGAIN',
+			id: '286ffddd-9b7a-4888-80ba-7c5b506f0331',
+		},
 		noSuchFile: {
 			message: 'No such file.',
 			code: 'NO_SUCH_FILE',
@@ -63,9 +68,10 @@ export const paramDef = {
 		license: { type: 'string', nullable: true, maxLength: 1024 },
 		isSensitive: { type: 'boolean' },
 		localOnly: { type: 'boolean' },
-		comment: { type: 'string', nullable: true, maxLength: 2048 },
+		// 空白だけのひとことは受け付けない
+		comment: { type: 'string', minLength: 1, maxLength: 2048, pattern: '\\S' },
 	},
-	required: ['fileId', 'name'],
+	required: ['fileId', 'name', 'comment'],
 } as const;
 
 @Injectable()
@@ -82,7 +88,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					license: ps.license || null,
 					isSensitive: ps.isSensitive ?? false,
 					localOnly: ps.localOnly ?? false,
-				}, ps.comment || null);
+				}, ps.comment);
 				const [packed] = await this.emojiRequestService.packMany([request], me);
 				return packed;
 			} catch (err) {

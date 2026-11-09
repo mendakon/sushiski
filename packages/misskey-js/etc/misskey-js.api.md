@@ -227,6 +227,12 @@ type AdminEmojiRequestsRejectRequest = operations['admin___emoji-requests___reje
 type AdminEmojiRequestsRejectResponse = operations['admin___emoji-requests___reject']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiRequestsUnrejectRequest = operations['admin___emoji-requests___unreject']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiRequestsUnrejectResponse = operations['admin___emoji-requests___unreject']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiSetAliasesBulkRequest = operations['admin___emoji___set-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1618,6 +1624,8 @@ declare namespace entities {
         AdminEmojiRequestsListResponse,
         AdminEmojiRequestsRejectRequest,
         AdminEmojiRequestsRejectResponse,
+        AdminEmojiRequestsUnrejectRequest,
+        AdminEmojiRequestsUnrejectResponse,
         AdminEmojiAddRequest,
         AdminEmojiAddResponse,
         AdminEmojiAddAliasesBulkRequest,

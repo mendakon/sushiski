@@ -49,6 +49,8 @@ import type {
 	AdminEmojiRequestsListResponse,
 	AdminEmojiRequestsRejectRequest,
 	AdminEmojiRequestsRejectResponse,
+	AdminEmojiRequestsUnrejectRequest,
+	AdminEmojiRequestsUnrejectResponse,
 	AdminEmojiAddRequest,
 	AdminEmojiAddResponse,
 	AdminEmojiAddAliasesBulkRequest,
@@ -711,6 +713,7 @@ export type Endpoints = {
 	'admin/emoji-requests/approve': { req: AdminEmojiRequestsApproveRequest; res: AdminEmojiRequestsApproveResponse };
 	'admin/emoji-requests/list': { req: AdminEmojiRequestsListRequest; res: AdminEmojiRequestsListResponse };
 	'admin/emoji-requests/reject': { req: AdminEmojiRequestsRejectRequest; res: AdminEmojiRequestsRejectResponse };
+	'admin/emoji-requests/unreject': { req: AdminEmojiRequestsUnrejectRequest; res: AdminEmojiRequestsUnrejectResponse };
 	'admin/emoji/add': { req: AdminEmojiAddRequest; res: AdminEmojiAddResponse };
 	'admin/emoji/add-aliases-bulk': { req: AdminEmojiAddAliasesBulkRequest; res: EmptyResponse };
 	'admin/emoji/copy': { req: AdminEmojiCopyRequest; res: AdminEmojiCopyResponse };

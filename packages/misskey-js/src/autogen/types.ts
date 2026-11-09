@@ -295,6 +295,15 @@ export type paths = {
          */
         post: operations['admin___emoji-requests___reject'];
     };
+    '/admin/emoji-requests/unreject': {
+        /**
+         * admin/emoji-requests/unreject
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji-requests___unreject'];
+    };
     '/admin/emoji/add': {
         /**
          * admin/emoji/add
@@ -8125,6 +8134,72 @@ export interface operations {
                     /** Format: misskey:id */
                     requestId: string;
                     reason?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['SushiskiEmojiRequest'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___emoji-requests___unreject': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    requestId: string;
                 };
             };
         };
@@ -21327,7 +21402,7 @@ export interface operations {
                     license?: string | null;
                     isSensitive?: boolean;
                     localOnly?: boolean;
-                    comment?: string | null;
+                    comment: string;
                 };
             };
         };

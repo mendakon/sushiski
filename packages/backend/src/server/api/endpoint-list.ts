@@ -455,3 +455,4 @@ export * as 'emoji-requests/cancel' from './endpoints/emoji-requests/cancel.js';
 export * as 'admin/emoji-requests/list' from './endpoints/admin/emoji-requests/list.js';
 export * as 'admin/emoji-requests/approve' from './endpoints/admin/emoji-requests/approve.js';
 export * as 'admin/emoji-requests/reject' from './endpoints/admin/emoji-requests/reject.js';
+export * as 'admin/emoji-requests/unreject' from './endpoints/admin/emoji-requests/unreject.js';

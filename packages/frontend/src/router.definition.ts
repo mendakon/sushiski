@@ -364,9 +364,15 @@ export const ROUTE_DEF = [{
 	// sushi.ski: 絵文字申請
 	path: '/emoji-requests/review',
 	component: page(() => import('@/pages/emoji-requests.review.vue')),
+	loginRequired: true,
 }, {
 	path: '/emoji-requests',
 	component: page(() => import('@/pages/emoji-requests.vue')),
+	loginRequired: true,
+	// sushi.ski: 承認の通知から開いたとき、その申請までスクロールする
+	query: {
+		emoji: 'focusEmojiName',
+	},
 }, {
 	path: '/registry/keys/:domain/:path(*)?',
 	component: page(() => import('@/pages/registry.keys.vue')),

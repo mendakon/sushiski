@@ -7,7 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div v-panel :class="$style.root">
 	<div :class="$style.imgContainer">
-		<img v-if="request.file != null" :src="request.file.thumbnailUrl ?? request.file.url" :class="$style.img" :alt="request.name"/>
+		<!-- 確認する人がアニメーションを確かめられるよう、確認ページでは元の画像を出す -->
+		<img v-if="request.file != null" :src="showUser ? request.file.url : (request.file.thumbnailUrl ?? request.file.url)" :class="$style.img" :alt="request.name"/>
 		<i v-else class="ti ti-photo-off" :class="$style.noImg"></i>
 	</div>
 	<div :class="$style.body">
@@ -17,10 +18,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div v-if="showUser" :class="$style.meta">
 			{{ i18n.ts._sushiskiEmojiRequest.requestedBy }}:
-			<MkA :to="`/@${request.user.username}`"><MkAcct :user="request.user"/></MkA>
+			<MkA :to="userPage(request.user)"><MkAcct :user="request.user"/></MkA>
 		</div>
-		<div v-if="request.category != null" :class="$style.meta">{{ i18n.ts.category }}: {{ request.category }}</div>
-		<div v-if="request.aliases.length > 0" :class="$style.meta">{{ i18n.ts.tags }}: {{ request.aliases.join(' ') }}</div>
+		<div v-if="request.category != null" :class="[$style.meta, $style.chips]">
+			{{ i18n.ts.category }}:
+			<MkTagItem :content="request.category"/>
+		</div>
+		<div v-if="request.aliases.length > 0" :class="[$style.meta, $style.chips]">
+			{{ i18n.ts.tags }}:
+			<MkTagItem v-for="(tag, i) in request.aliases" :key="`${i}:${tag}`" :content="tag"/>
+		</div>
 		<div v-if="request.license != null" :class="$style.meta">{{ i18n.ts.license }}: {{ request.license }}</div>
 		<div v-if="request.comment != null" :class="$style.comment">{{ request.comment }}</div>
 		<div v-if="request.status === 'rejected' && request.rejectReason != null" :class="$style.meta">
@@ -36,7 +43,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
+import MkTagItem from '@/components/MkTagItem.vue';
 import { i18n } from '@/i18n.js';
+import { userPage } from '@/filters/user.js';
 
 withDefaults(defineProps<{
 	request: Misskey.entities.SushiskiEmojiRequest;
@@ -115,6 +124,13 @@ withDefaults(defineProps<{
 	opacity: 0.8;
 	margin-top: 4px;
 	word-break: break-all;
+}
+
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
 }
 
 .comment {

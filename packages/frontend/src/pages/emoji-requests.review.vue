@@ -16,6 +16,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton small primary @click="approve(request)"><i class="ti ti-check"></i> {{ i18n.ts._sushiskiEmojiRequest.approve }}</MkButton>
 					<MkButton small danger @click="reject(request)"><i class="ti ti-x"></i> {{ i18n.ts._sushiskiEmojiRequest.reject }}</MkButton>
 				</template>
+				<template v-else-if="request.status === 'rejected'" #actions>
+					<MkButton small @click="unreject(request)"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts._sushiskiEmojiRequest.unreject }}</MkButton>
+				</template>
 			</XRequestItem>
 		</div>
 	</div>
@@ -59,62 +62,35 @@ async function load() {
 watch(tab, load, { immediate: true });
 
 function replace(updated: Misskey.entities.SushiskiEmojiRequest) {
-	// 確認待ちのタブからは消し、ほかのタブでは差し替える
-	requests.value = tab.value === 'pending'
+	// 状態が変わってこのタブの対象から外れたものは消し、そうでなければ差し替える
+	requests.value = updated.status !== tab.value
 		? requests.value.filter(r => r.id !== updated.id)
 		: requests.value.map(r => r.id === updated.id ? updated : r);
 }
 
-async function approve(request: Misskey.entities.SushiskiEmojiRequest) {
-	// 申請の内容を直してから登録できるようにする
-	const { canceled, result } = await os.form(i18n.ts._sushiskiEmojiRequest.approveConfirm, {
-		name: {
-			type: 'string',
-			label: i18n.ts.name,
-			default: request.name,
-		},
-		category: {
-			type: 'string',
-			required: false,
-			label: i18n.ts.category,
-			default: request.category ?? '',
-		},
-		aliases: {
-			type: 'string',
-			required: false,
-			label: i18n.ts.tags,
-			description: i18n.ts.setMultipleBySeparatingWithSpace,
-			default: request.aliases.join(' '),
-		},
-		license: {
-			type: 'string',
-			required: false,
-			label: i18n.ts.license,
-			default: request.license ?? '',
-		},
-		isSensitive: {
-			type: 'boolean',
-			label: i18n.ts.sensitive,
-			default: request.isSensitive,
-		},
-		localOnly: {
-			type: 'boolean',
-			label: i18n.ts.localOnly,
-			default: request.localOnly,
-		},
-	});
-	if (canceled) return;
+// ダイアログの読み込み中にもう一度押されても、2 つ開かないようにする
+let openingApproveDialog = false;
 
-	const updated = await os.apiWithDialog('admin/emoji-requests/approve', {
-		requestId: request.id,
-		name: result.name,
-		category: result.category == null || result.category === '' ? null : result.category,
-		aliases: (result.aliases ?? '').split(' ').filter(x => x !== ''),
-		license: result.license == null || result.license === '' ? null : result.license,
-		isSensitive: result.isSensitive,
-		localOnly: result.localOnly,
-	});
-	replace(updated);
+async function approve(request: Misskey.entities.SushiskiEmojiRequest) {
+	if (openingApproveDialog) return;
+	openingApproveDialog = true;
+	// 申請の内容を直してから登録できるようにする
+	try {
+		const { dispose } = await os.popupAsyncWithDialog(import('./emoji-requests.approve-dialog.vue').then(x => x.default), {
+			request,
+		}, {
+			done: updated => {
+				replace(updated);
+			},
+			closed: () => {
+				openingApproveDialog = false;
+				dispose();
+			},
+		});
+	} catch {
+		// 読み込みの失敗は popupAsyncWithDialog が表示するので、ここではフラグを戻すだけ
+		openingApproveDialog = false;
+	}
 }
 
 async function reject(request: Misskey.entities.SushiskiEmojiRequest) {
@@ -129,8 +105,19 @@ async function reject(request: Misskey.entities.SushiskiEmojiRequest) {
 	const updated = await os.apiWithDialog('admin/emoji-requests/reject', {
 		requestId: request.id,
 		reason: result == null || result === '' ? null : result,
+	}).catch(() => null);
+	if (updated != null) replace(updated);
+}
+
+async function unreject(request: Misskey.entities.SushiskiEmojiRequest) {
+	const { canceled } = await os.confirm({
+		type: 'question',
+		text: i18n.ts._sushiskiEmojiRequest.unrejectConfirm,
 	});
-	replace(updated);
+	if (canceled) return;
+
+	const updated = await os.apiWithDialog('admin/emoji-requests/unreject', { requestId: request.id }).catch(() => null);
+	if (updated != null) replace(updated);
 }
 
 const headerTabs = computed(() => (['pending', 'approved', 'rejected', 'canceled'] as const).map(status => ({

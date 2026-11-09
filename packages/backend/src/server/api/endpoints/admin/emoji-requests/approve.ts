@@ -18,6 +18,11 @@ export const meta = {
 	kind: 'write:admin:emoji',
 
 	errors: {
+		busy: {
+			message: 'Another operation on the same emoji name is in progress. Please try again.',
+			code: 'TRY_AGAIN',
+			id: '91a71e4e-2101-42bf-8146-20e202dbae13',
+		},
 		notAllowed: {
 			message: 'You are not allowed to review emoji requests.',
 			code: 'NOT_ALLOWED',

@@ -102,7 +102,7 @@
 
 | 誰に | いつ | どうやって |
 |---|---|---|
-| 申請者 | 承認・却下されたとき | すしすきー内の通知。既存の `app` 型の通知（`NotificationService.createNotification(userId, 'app', { appAccessTokenId: null, customHeader, customBody, customIcon })`）を使い、新しい通知の種類は足さない。アイコンには絵文字の画像を使う |
+| 申請者 | 承認されたとき（却下は通知せず、申請ページで確認する） | すしすきー内の通知。既存の `app` 型の通知（`NotificationService.createNotification(userId, 'app', { appAccessTokenId: null, customHeader, customBody, customIcon })`）を使い、新しい通知の種類は足さない。アイコンには絵文字の画像を使う |
 | 承認者 | 新しい申請が来たとき | Discord。PR #5 の `emailBlocked` と同じく、システム Webhook のイベント `emojiRequestCreated` を足し、`misc/discord-webhook.ts` に文面を足す |
 
 `app` 型を使うと、本家の通知の種類の一覧（backend の `models/Notification.ts`、misskey-js、frontend の `MkNotification.vue`）を触らずに済む。ただし、ユーザーが「アプリからの通知」をミュートしていると届かない。その場合でも、申請ページの自分の申請一覧で状態は見られる。
