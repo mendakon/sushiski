@@ -1,0 +1,29 @@
+#!/bin/sh
+# sushi.ski のメンテナンス表示を切り替える。
+#   sushiski-maintenance on      メンテナンス中にする (nginx が 503 + maintenance.html を返す)
+#   sushiski-maintenance off     通常に戻す
+#   sushiski-maintenance status  現在の状態を表示
+# nginx はリクエストごとにファイルの有無を見るので、reload は不要。
+set -eu
+
+ROOT="${SUSHISKI_ROOT:-/home/misskey/sushiski}"
+FLAG="$ROOT/nginx/html/maintenance.on"
+
+case "${1:-status}" in
+	on)
+		touch "$FLAG"
+		chmod 644 "$FLAG"
+		echo "maintenance: on"
+		;;
+	off)
+		rm -f "$FLAG"
+		echo "maintenance: off"
+		;;
+	status)
+		if [ -e "$FLAG" ]; then echo "maintenance: on"; else echo "maintenance: off"; fi
+		;;
+	*)
+		echo "usage: $0 on|off|status" >&2
+		exit 2
+		;;
+esac
