@@ -23,7 +23,7 @@ import type { IPoll } from '@/models/Poll.js';
 import { MiPoll } from '@/models/Poll.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import type { MiChannel } from '@/models/Channel.js';
-import { normalizeForSearch } from '@/misc/normalize-for-search.js';
+import { normalizeTag } from '@/misc/normalize-tag.js';
 import { RelayService } from '@/core/RelayService.js';
 import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
 import { DI } from '@/di-symbols.js';
@@ -57,6 +57,7 @@ import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { CacheService } from '@/core/CacheService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
+import { extractUrlsForKeyWordCheck } from '@/misc/extract-urls-for-keyword-check.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
 
@@ -472,8 +473,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 		if (data.visibility === 'public' && data.channel == null) {
 			const sensitiveWords = this.meta.sensitiveWords;
 			// sushi.ski: CW付きの場合も本文をセンシティブワードの対象にする
-			// (スペースアンド指定が CW と本文をまたいで一致しないよう、それぞれ個別に判定する)
-			if ([data.cw, data.text].some(t => t != null && this.utilityService.isKeyWordIncluded(t, sensitiveWords))) {
+			// (スペースアンド指定が CW と本文をまたいで一致しないよう、それぞれ個別に判定する。URL の正規化は本家に合わせる)
+			if (sensitiveWords.length > 0 && [data.cw, data.text].some(t => t != null && this.utilityService.isKeyWordIncluded([t, ...extractUrlsForKeyWordCheck(t)].join('\n'), sensitiveWords))) {
 				data.visibility = 'home';
 			} else if ((await this.roleService.getUserPolicies(user.id)).canPublicNote === false) {
 				data.visibility = 'home';
@@ -660,7 +661,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			text: data.text,
 			hasPoll: data.poll != null,
 			cw: data.cw ?? null,
-			tags: tags.map(tag => normalizeForSearch(tag)),
+			tags: tags.map(tag => normalizeTag(tag)),
 			emojis,
 			userId: user.id,
 			localOnly: data.localOnly!,
@@ -780,7 +781,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		this.pushToTl(note, user);
 
-		this.antennaService.addNoteToAntennas({
+		const matchedAntennas = this.antennaService.addNoteToAntennas({
 			...note,
 			channel: data.channel ?? null,
 		}, user);
@@ -844,6 +845,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 			this.globalEventService.publishNotesStream(noteObj);
 
 			this.roleService.addNoteToRoleTimeline(noteObj);
+
+			matchedAntennas.then(antennas => {
+				for (const antenna of antennas) {
+					this.globalEventService.publishAntennaStream(antenna.id, 'note', noteObj);
+				}
+			});
 
 			this.webhookService.enqueueUserWebhook(user.id, 'note', { note: noteObj });
 
@@ -1244,9 +1251,20 @@ export class NoteCreateService implements OnApplicationShutdown {
 			prohibitedWords = this.meta.prohibitedWords;
 		}
 
+		if (prohibitedWords.length === 0) {
+			return false;
+		}
+
 		if (
 			this.utilityService.isKeyWordIncluded(
-				this.utilityService.concatNoteContentsForKeyWordCheck(content),
+				this.utilityService.concatNoteContentsForKeyWordCheck({
+					...content,
+					others: [
+						...(content.others ?? []),
+						...extractUrlsForKeyWordCheck(content.cw ?? ''),
+						...extractUrlsForKeyWordCheck(content.text ?? ''),
+					],
+				}),
 				prohibitedWords,
 			)
 		) {
