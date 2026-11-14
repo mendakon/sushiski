@@ -6,7 +6,7 @@
 import * as dns from 'node:dns';
 import * as fs from 'node:fs/promises';
 import { resolve } from 'node:path';
-import * as nodemailer from 'nodemailer';
+import { createTransport } from 'nodemailer';
 import juice from 'juice';
 import sanitizeHtml from 'sanitize-html';
 import { Inject, Injectable } from '@nestjs/common';
@@ -93,17 +93,17 @@ export class EmailService {
 
 		const sanitizedHtml = sanitizeHtml(html);
 
-		const transporter = nodemailer.createTransport({
-			host: this.meta.smtpHost,
-			port: this.meta.smtpPort,
+		const transporter = createTransport({
+			host: this.meta.smtpHost ?? undefined,
+			port: this.meta.smtpPort ?? undefined,
 			secure: this.meta.smtpSecure,
 			ignoreTLS: !enableAuth,
 			proxy: this.config.proxySmtp,
 			auth: enableAuth ? {
-				user: this.meta.smtpUser,
-				pass: this.meta.smtpPass,
+				user: this.meta.smtpUser!,
+				pass: this.meta.smtpPass ?? undefined,
 			} : undefined,
-		} as any);
+		});
 
 		const htmlContent = `<!doctype html>
 <html>

@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import * as Misskey from 'misskey-js';
 import MkTagItem from '@/components/MkTagItem.vue';
 import { i18n } from '@/i18n.js';
-import { userPage } from '@/filters/user.js';
+import { userPage } from '@@/js/user.js';
 
 withDefaults(defineProps<{
 	request: Misskey.entities.SushiskiEmojiRequest;
